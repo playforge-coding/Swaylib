@@ -71,9 +71,14 @@ jobs:
         run: |
           HELPER=$(find ~/Library/Developer/Toolchains -name swiftpm-testing-helper -type f | head -1)
           BUNDLE=$(find .build -path '*SwaylibTests.xctest/Contents/MacOS/SwaylibTests' -type f | head -1)
-          echo "helper=$HELPER bundle=$BUNDLE"
-          lldb --batch -o run -o 'thread backtrace all' -- "$HELPER" --test-bundle-path "$BUNDLE" \
-            --testing-library swift-testing 2>&1 | tail -200
+          TOOLCHAIN=$(cd "$(dirname "$HELPER")/../../.." && pwd)
+          FRAMEWORKS="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/Library/Frameworks"
+          LIBS="$TOOLCHAIN/lib/swift/macosx/testing:$TOOLCHAIN/lib/swift/macosx:$PWD/.build/out/Products/Debug"
+          echo "helper=$HELPER bundle=$BUNDLE toolchain=$TOOLCHAIN"
+          lldb --batch \
+            -o "settings set target.env-vars DYLD_FRAMEWORK_PATH=$FRAMEWORKS DYLD_LIBRARY_PATH=$LIBS" \
+            -o run -o 'thread backtrace all' -- "$HELPER" --test-bundle-path "$PWD/$BUNDLE" \
+            --testing-library swift-testing 2>&1 | tail -250
       - name: Crash reports
         if: failure()
         run: |
