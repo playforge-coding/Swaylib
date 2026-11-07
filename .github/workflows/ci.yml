@@ -73,7 +73,8 @@ jobs:
           BUNDLE=$(find .build -path '*SwaylibTests.xctest/Contents/MacOS/SwaylibTests' -type f | head -1)
           TOOLCHAIN=$(cd "$(dirname "$HELPER")/../../.." && pwd)
           FRAMEWORKS="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/Library/Frameworks"
-          LIBS="$TOOLCHAIN/lib/swift/macosx/testing:$TOOLCHAIN/lib/swift/macosx:$PWD/.build/out/Products/Debug"
+          PLATFORM_LIBS="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/usr/lib"
+          LIBS="$TOOLCHAIN/lib/swift/macosx/testing:$TOOLCHAIN/lib/swift/macosx:$PLATFORM_LIBS:$PWD/.build/out/Products/Debug"
           echo "helper=$HELPER bundle=$BUNDLE toolchain=$TOOLCHAIN"
           lldb --batch \
             -o "settings set target.env-vars DYLD_FRAMEWORK_PATH=$FRAMEWORKS DYLD_LIBRARY_PATH=$LIBS" \
