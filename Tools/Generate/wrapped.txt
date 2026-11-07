@@ -1,0 +1,5 @@
+# raylib functions that Swaylib wraps, one per line: the C name, then the Swift symbol that
+# replaces it, written as a DocC symbol link (Type/member(label:)). swaylib-generate turns
+# this into the API Coverage page and fails if a C name does not exist in raylib_api.json.
+#
+# Keep this in step with Sources/Swaylib: add a line when you wrap a function.

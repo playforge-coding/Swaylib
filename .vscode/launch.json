@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Debug swaylib-generate",
+            "target": "swaylib-generate",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swaylib-generate"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Release swaylib-generate",
+            "target": "swaylib-generate",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swaylib-generate"
+        }
+    ]
+}
