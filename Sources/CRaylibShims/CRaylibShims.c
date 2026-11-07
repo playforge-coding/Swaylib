@@ -10,7 +10,7 @@
 
 #if defined(__APPLE__)
 // Declarations only; the implementation is compiled into rcore by raylib's RGFW platform.
-#include "../CRaylib/raylib/external/RGFW/RGFW.h"
+#include "../CRaylib/raylib/src/external/RGFW/RGFW.h"
 #endif
 
 // Atomic because raylib can log from its audio thread while the main thread swaps handlers.
