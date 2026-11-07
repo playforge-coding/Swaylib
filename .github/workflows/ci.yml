@@ -66,6 +66,14 @@ jobs:
           done
       - name: Test
         run: swift test
+      - name: Backtrace of the test crash
+        if: failure()
+        run: |
+          HELPER=$(find ~/Library/Developer/Toolchains -name swiftpm-testing-helper -type f | head -1)
+          BUNDLE=$(find .build -path '*SwaylibTests.xctest/Contents/MacOS/SwaylibTests' -type f | head -1)
+          echo "helper=$HELPER bundle=$BUNDLE"
+          lldb --batch -o run -o 'thread backtrace all' -- "$HELPER" --test-bundle-path "$BUNDLE" \
+            --testing-library swift-testing 2>&1 | tail -200
       - name: Crash reports
         if: failure()
         run: |
