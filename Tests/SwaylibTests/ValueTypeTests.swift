@@ -110,6 +110,7 @@ struct ValueTypeTests {
     }
 
     @Test("Random values stay in range")
+    @MainActor
     func random() {
         Random.seed(42)
         for _ in 0..<100 {

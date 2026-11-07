@@ -55,48 +55,48 @@ public struct Shader: ~Copyable {
         raw.locs[Int(index.rawValue)] = location
     }
 
-    /// Sets a float uniform.
-    public func setValue(_ value: Float, at location: Int32) {
+    /// Sets a `float` uniform.
+    public func setFloat(_ value: Float, at location: Int32) {
         var value = value
         SetShaderValue(raw, location, &value, ShaderUniformDataType.float.rawValue)
     }
 
-    /// Sets an int uniform.
-    public func setValue(_ value: Int32, at location: Int32) {
+    /// Sets an `int` uniform.
+    public func setInt(_ value: Int32, at location: Int32) {
         var value = value
         SetShaderValue(raw, location, &value, ShaderUniformDataType.int.rawValue)
     }
 
-    /// Sets a vec2 uniform.
-    public func setValue(_ value: Vector2, at location: Int32) {
+    /// Sets a `vec2` uniform.
+    public func setVector(_ value: Vector2, at location: Int32) {
         var value = value.raw
         SetShaderValue(raw, location, &value, ShaderUniformDataType.vec2.rawValue)
     }
 
-    /// Sets a vec3 uniform.
-    public func setValue(_ value: Vector3, at location: Int32) {
+    /// Sets a `vec3` uniform.
+    public func setVector(_ value: Vector3, at location: Int32) {
         var value = value.raw
         SetShaderValue(raw, location, &value, ShaderUniformDataType.vec3.rawValue)
     }
 
-    /// Sets a vec4 uniform.
-    public func setValue(_ value: Vector4, at location: Int32) {
+    /// Sets a `vec4` uniform.
+    public func setVector(_ value: Vector4, at location: Int32) {
         var value = value.raw
         SetShaderValue(raw, location, &value, ShaderUniformDataType.vec4.rawValue)
     }
 
-    /// Sets a mat4 uniform.
-    public func setValue(_ value: Matrix, at location: Int32) {
+    /// Sets a `mat4` uniform.
+    public func setMatrix(_ value: Matrix, at location: Int32) {
         SetShaderValueMatrix(raw, location, value.raw)
     }
 
-    /// Binds a texture to a sampler2D uniform.
-    public func setValue(_ texture: borrowing Texture, at location: Int32) {
+    /// Binds a texture to a `sampler2D` uniform.
+    public func setTexture(_ texture: borrowing Texture, at location: Int32) {
         SetShaderValueTexture(raw, location, texture.raw)
     }
 
-    /// Sets a float array uniform.
-    public func setValue(_ values: [Float], at location: Int32) {
+    /// Sets a `float[]` uniform.
+    public func setFloats(_ values: [Float], at location: Int32) {
         values.withUnsafeBufferPointer {
             SetShaderValueV(raw, location, $0.baseAddress, ShaderUniformDataType.float.rawValue, Int32($0.count))
         }

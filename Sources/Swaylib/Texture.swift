@@ -77,10 +77,15 @@ public struct Texture: ~Copyable {
         GenTextureMipmaps(&raw)
     }
 
-    /// Replaces the pixels with RGBA data of the texture's size.
+    /// Replaces the pixels of an RGBA texture with new colors, row by row from the top left.
     ///
-    /// - Precondition: `pixels.count` is `width * height`.
+    /// Textures loaded from files may have another format (a JPEG loads as RGB); make those from an
+    /// ``Image`` converted with ``Image/convert(to:)`` first.
+    ///
+    /// - Precondition: ``format`` is ``PixelFormat/uncompressedR8G8B8A8`` and `pixels.count` is
+    ///   `width * height`.
     public func update(pixels: [Color]) {
+        precondition(format == .uncompressedR8G8B8A8, "update(pixels:) needs an RGBA texture")
         precondition(pixels.count == width * height, "pixels must cover the whole texture")
         pixels.withUnsafeBytes { UpdateTexture(raw, $0.baseAddress) }
     }

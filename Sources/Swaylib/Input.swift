@@ -4,10 +4,16 @@ import CRaylib
 @MainActor
 public enum Keyboard {
     /// The key that makes ``Window/shouldClose`` turn true. raylib's default is ``KeyboardKey/escape``;
-    /// ``KeyboardKey/null`` disables it.
-    public static var exitKey: KeyboardKey = .escape {
-        didSet { SetExitKey(exitKey.rawValue) }
+    /// ``KeyboardKey/null`` disables it. Opening a ``Window`` applies the current value.
+    public static var exitKey: KeyboardKey {
+        get { storedExitKey }
+        set {
+            storedExitKey = newValue
+            SetExitKey(newValue.rawValue)
+        }
     }
+
+    static var storedExitKey: KeyboardKey = .escape
 
     /// Whether the key went down this frame.
     public static func isPressed(_ key: KeyboardKey) -> Bool {
@@ -35,10 +41,15 @@ public enum Keyboard {
     }
 
     /// The next key pressed this frame, or nil when the queue is empty. Call repeatedly to drain it.
+    /// Key codes raylib has no name for (some layout-specific keys) are skipped.
     public static func nextPressedKey() -> KeyboardKey? {
-        let key = GetKeyPressed()
-        guard key != 0 else { return nil }
-        return KeyboardKey(rawValue: key)
+        while true {
+            let key = GetKeyPressed()
+            guard key != 0 else { return nil }
+            if let known = KeyboardKey(rawValue: key) {
+                return known
+            }
+        }
     }
 
     /// The next character typed this frame, or nil when the queue is empty. Call repeatedly to drain it.
@@ -103,10 +114,16 @@ public enum Mouse {
         SetMouseScale(scale.x, scale.y)
     }
 
-    /// The pointer shape.
-    public static var cursor: MouseCursor = .default {
-        didSet { SetMouseCursor(cursor.rawValue) }
+    /// The pointer shape. Opening a ``Window`` applies the current value.
+    public static var cursor: MouseCursor {
+        get { storedCursor }
+        set {
+            storedCursor = newValue
+            SetMouseCursor(newValue.rawValue)
+        }
     }
+
+    static var storedCursor: MouseCursor = .default
 
     /// Whether the pointer is hidden.
     public static var isCursorHidden: Bool {

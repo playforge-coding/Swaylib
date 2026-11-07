@@ -25,7 +25,9 @@ public struct Window: ~Copyable {
     ///   - height: The height in screen pixels.
     ///   - title: The window title.
     ///   - flags: raylib config flags applied before the window opens, such as
-    ///     ``ConfigFlags/windowResizable`` or ``ConfigFlags/vsyncHint``.
+    ///     ``ConfigFlags/windowResizable`` or ``ConfigFlags/vsyncHint``. raylib keeps them for the
+    ///     rest of the process, so a later window inherits the flags of an earlier one; use
+    ///     ``clearState(_:)`` after opening to turn one off.
     /// - Throws: ``SwaylibError/windowFailed`` if the window or context could not be created.
     public init(width: Int, height: Int, title: String, flags: ConfigFlags = []) throws(SwaylibError) {
         if !flags.isEmpty {
@@ -34,6 +36,9 @@ public struct Window: ~Copyable {
         InitWindow(Int32(width), Int32(height), title)
         guard IsWindowReady() else { throw .windowFailed }
         self.title = title
+        // raylib resets these when it opens a window; keep what the program chose.
+        SetExitKey(Keyboard.storedExitKey.rawValue)
+        SetMouseCursor(Mouse.storedCursor.rawValue)
         Headless.start()
     }
 
@@ -254,6 +259,7 @@ public enum Time {
 }
 
 /// raylib's random number generator, seeded from the clock when the window opens.
+@MainActor
 public enum Random {
     /// Seeds the generator.
     public static func seed(_ seed: UInt32) {

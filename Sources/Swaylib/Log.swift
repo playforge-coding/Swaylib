@@ -3,11 +3,12 @@ import CRaylibShims
 import Synchronization
 
 /// raylib's trace log: the messages it prints while loading files, creating the window and so on.
+@MainActor
 public enum Log {
     /// Receives one log line. Called on whichever thread raylib logs from, usually the main thread.
     public typealias Handler = @Sendable (TraceLogLevel, String) -> Void
 
-    private static let handler = Mutex<Handler?>(nil)
+    private nonisolated static let handler = Mutex<Handler?>(nil)
 
     /// Redirects raylib's log to `handler`, or back to stdout when nil.
     public static func setHandler(_ handler: Handler?) {
@@ -25,7 +26,7 @@ public enum Log {
         swaylibLog(level.rawValue, message)
     }
 
-    fileprivate static func dispatch(_ level: Int32, _ message: String) {
+    fileprivate nonisolated static func dispatch(_ level: Int32, _ message: String) {
         guard let handler = handler.withLock({ $0 }) else { return }
         handler(TraceLogLevel(rawValue: level) ?? .info, message)
     }
