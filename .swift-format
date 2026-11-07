@@ -13,7 +13,7 @@
   "rules": {
     "AllPublicDeclarationsHaveDocumentation": true,
     "AlwaysUseLowerCamelCase": true,
-    "BeginDocumentationCommentWithOneLineSummary": true,
+    "BeginDocumentationCommentWithOneLineSummary": false,
     "DoNotUseSemicolons": true,
     "DontRepeatTypeInStaticProperties": true,
     "FullyIndirectEnum": true,

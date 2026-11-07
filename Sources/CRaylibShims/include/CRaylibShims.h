@@ -15,6 +15,9 @@ typedef void (*SwaylibLogHandler)(int logLevel, const char *message);
 // delivered, the same as raylib's default logging does.
 void swaylibSetLogHandler(SwaylibLogHandler handler);
 
+// Writes one line to raylib's trace log. TraceLog itself is variadic, which Swift cannot call.
+void swaylibLog(int logLevel, const char *message);
+
 #ifdef __cplusplus
 }
 #endif

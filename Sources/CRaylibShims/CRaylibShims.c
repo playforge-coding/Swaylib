@@ -49,3 +49,8 @@ void swaylibSetLogHandler(SwaylibLogHandler handler)
     atomic_store(&currentHandler, handler);
     SetTraceLogCallback(handler != NULL ? forwardLog : NULL);
 }
+
+void swaylibLog(int logLevel, const char *message)
+{
+    TraceLog(logLevel, "%s", message);
+}

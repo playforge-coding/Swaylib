@@ -19,6 +19,86 @@
             "target": "swaylib-generate",
             "configuration": "release",
             "preLaunchTask": "swift: Build Release swaylib-generate"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Debug RenderTextures",
+            "target": "RenderTextures",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug RenderTextures"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Release RenderTextures",
+            "target": "RenderTextures",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release RenderTextures"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Debug Camera3D",
+            "target": "Camera3D",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Camera3D"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Release Camera3D",
+            "target": "Camera3D",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Camera3D"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Debug BouncingBall",
+            "target": "BouncingBall",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug BouncingBall"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Release BouncingBall",
+            "target": "BouncingBall",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release BouncingBall"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Debug BasicWindow",
+            "target": "BasicWindow",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug BasicWindow"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Swaylib}",
+            "name": "Release BasicWindow",
+            "target": "BasicWindow",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release BasicWindow"
         }
     ]
 }
