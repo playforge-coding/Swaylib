@@ -26,12 +26,16 @@ let package = Package(
             exclude: ["raylib", "LICENSE", "VERSION"],
             sources: [
                 "rcore.c", "rshapes.c", "rtextures.c", "rtext.c", "rmodels.c", "raudio.c",
-                "rglfw.c", "rglfw.m",
+                "rglfw.c",
             ],
             cSettings: [
                 .headerSearchPath("raylib"),
                 .headerSearchPath("raylib/external/glfw/include"),
-                .define("PLATFORM_DESKTOP_GLFW"),
+                // GLFW's Cocoa code is Objective-C without ARC, and SwiftPM compiles Objective-C
+                // with ARC on and offers no way to turn it off, so macOS uses raylib's RGFW
+                // platform instead, whose macOS backend is plain C over the Objective-C runtime.
+                .define("PLATFORM_DESKTOP_GLFW", .when(platforms: [.linux, .windows])),
+                .define("PLATFORM_DESKTOP_RGFW", .when(platforms: [.macOS])),
                 // Without any GRAPHICS_API_OPENGL_* define rlgl picks desktop OpenGL 3.3.
                 .define("GRAPHICS_API_OPENGL_ES3", .when(traits: ["ANGLE"])),
                 .define("_GLFW_X11", .when(platforms: [.linux])),
