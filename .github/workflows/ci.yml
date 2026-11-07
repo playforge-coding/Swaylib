@@ -17,7 +17,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev \
-            xvfb mesa-utils
+            libgles-dev xvfb mesa-utils
       - name: Lint
         run: swift format lint --strict --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift
       - name: Generated code is up to date
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: compnerd/gha-setup-swift@main
         with:
-          swift-version: swift-6.4-release
+          swift-version: swift-6.4.2-release
           swift-build: 6.4.2-RELEASE
       - name: Build
         run: swift build

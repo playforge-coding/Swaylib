@@ -24,14 +24,17 @@ through EGL instead of the platform's native OpenGL API:
 .package(url: "https://github.com/playforge-coding/Swaylib.git", branch: "main", traits: ["ANGLE"]),
 ```
 
-GLFW loads `libEGL` and `libGLESv2` when the window opens, so the ANGLE libraries are not linked.
-They need to be found at run time: next to the executable on Windows, on the library path on
-Linux, or in the app bundle on macOS. Which ANGLE backend is used (Vulkan, D3D11, Metal) is up to
-the ANGLE build you ship and its defaults.
+Two libraries are involved. GLFW loads `libEGL` at run time to create the context. raylib's
+`rlgl` calls the `gl*` functions directly on this path, so `libGLESv2` is linked: at build time
+the linker needs a `GLESv2` library (`libgles-dev` on Debian and Ubuntu, or ANGLE's own
+`libGLESv2` on Windows and macOS), and at run time the program loads whichever `libGLESv2` it
+finds first, which is how you point it at ANGLE: next to the executable on Windows, on the library
+path on Linux, or in the app bundle on macOS. Which ANGLE backend is used (Vulkan, D3D11, Metal)
+is up to the ANGLE build you ship and its defaults.
 
-The trait compiles and is tested on CI, but Swaylib does not yet fetch ANGLE binaries for you,
-and choosing the ANGLE platform from Swift is still on the <doc:Roadmap>. Until then, treat it as
-experimental.
+CI builds the trait on Linux against Mesa's GLES library. Swaylib does not yet fetch ANGLE
+binaries for you, and choosing the ANGLE platform from Swift is still on the <doc:Roadmap>. Until
+then, treat it as experimental.
 
 ### Shaders
 

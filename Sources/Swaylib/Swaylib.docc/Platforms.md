@@ -16,7 +16,7 @@ Needs the X11 and OpenGL development headers to build. On Debian and Ubuntu:
 sudo apt install libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev
 ```
 
-At run time GLFW loads the X11 extension libraries, `libGL` and ALSA (for audio) dynamically, so
+The `ANGLE` trait also needs `libgles-dev`. At run time GLFW loads the X11 extension libraries, `libGL` and ALSA (for audio) dynamically, so
 only the usual desktop packages are needed. Wayland sessions work through XWayland. A native
 Wayland backend is on the <doc:Roadmap>; it needs protocol headers generated with
 `wayland-scanner`, which the SwiftPM build cannot run yet.
@@ -34,7 +34,8 @@ to run them on a machine that has one. Treat Windows as building but not yet ver
 
 ## macOS
 
-Needs macOS 14 or newer and the Swift toolchain, either from Xcode or from swift.org. GLFW's Cocoa
+Needs macOS 15 or newer (for the standard library's `Mutex`) and the Swift toolchain, either
+from Xcode or from swift.org. GLFW's Cocoa
 backend is compiled as Objective-C, and raylib links the AppKit, IOKit, CoreVideo, QuartzCore,
 OpenGL and CoreAudio frameworks.
 
