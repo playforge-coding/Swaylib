@@ -5,7 +5,8 @@ import PackageDescription
 let package = Package(
     name: "Swaylib",
     platforms: [
-        .macOS(.v14)
+        // Synchronization.Mutex, which Log uses, needs macOS 15.
+        .macOS(.v15)
     ],
     products: [
         .library(name: "Swaylib", targets: ["Swaylib"])
@@ -36,6 +37,9 @@ let package = Package(
                 .define("_GLFW_X11", .when(platforms: [.linux])),
             ],
             linkerSettings: [
+                // rlgl's OpenGL ES 3 path calls gl* directly, so the GLES library must be on the
+                // linker path: libgles-dev's on Linux, ANGLE's own libGLESv2 on Windows and macOS.
+                .linkedLibrary("GLESv2", .when(traits: ["ANGLE"])),
                 .linkedLibrary("X11", .when(platforms: [.linux])),
                 .linkedLibrary("m", .when(platforms: [.linux])),
                 .linkedLibrary("dl", .when(platforms: [.linux])),
