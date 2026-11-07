@@ -41,6 +41,11 @@ compiles Objective-C with ARC and cannot be told otherwise, and RGFW's macOS bac
 over the Objective-C runtime. raylib links the AppKit, IOKit, CoreVideo, QuartzCore, OpenGL and
 CoreAudio frameworks.
 
+RGFW moves the working directory next to the executable (or into the bundle's resources) while
+the window opens, like raylib's own macOS builds do. Load assets after creating the ``Window`` with
+paths relative to the executable, or use absolute paths. Swaylib resolves `SWAYLIB_SCREENSHOT`
+against the original working directory for you.
+
 Apple's OpenGL is deprecated but still present, and that is what the default backend uses. ANGLE on
 Metal is the intended default for macOS once Swaylib can ship ANGLE binaries; see <doc:Backends>.
 
