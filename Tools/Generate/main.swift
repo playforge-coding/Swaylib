@@ -10,7 +10,8 @@ let packageRoot = URL(filePath: #filePath)
     .deletingLastPathComponent()  // Generate
     .deletingLastPathComponent()  // Tools
 let toolDirectory = packageRoot.appending(path: "Tools/Generate")
-let apiFile = toolDirectory.appending(path: "raylib_api.json")
+// raylib's own parser output, from the submodule, so it always matches the raylib being built.
+let apiFile = packageRoot.appending(path: "Sources/CRaylib/raylib/tools/rlparser/output/raylib_api.json")
 let wrappedFile = toolDirectory.appending(path: "wrapped.txt")
 
 let outputs: [(path: String, content: () throws -> String)] = [
