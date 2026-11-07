@@ -1,4 +1,5 @@
 import CRaylib
+import CRaylibShims
 
 /// The application window and its OpenGL context. raylib has exactly one, so create one `Window`
 /// and keep it alive for as long as you draw; it closes when it goes out of scope.
@@ -38,6 +39,7 @@ public struct Window: ~Copyable {
         Headless.configure(workingDirectory: String(cString: GetWorkingDirectory()))
         InitWindow(Int32(width), Int32(height), title)
         guard IsWindowReady() else { throw .windowFailed }
+        swaylibPlatformWindowOpened()
         self.title = title
         // raylib resets these when it opens a window; keep what the program chose.
         SetExitKey(Keyboard.storedExitKey.rawValue)
@@ -46,6 +48,7 @@ public struct Window: ~Copyable {
 
     deinit {
         CloseWindow()
+        swaylibPlatformWindowClosed()
     }
 
     /// Whether the user asked to close the window (close button or the exit key), or the

@@ -2,11 +2,17 @@
 
 #include <stdarg.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <CRaylib.h>
+
+#if defined(__APPLE__)
+// Declarations only; the implementation is compiled into rcore by raylib's RGFW platform.
+#include "../CRaylib/raylib/external/RGFW/RGFW.h"
+#endif
 
 // Atomic because raylib can log from its audio thread while the main thread swaps handlers.
 static _Atomic(SwaylibLogHandler) currentHandler = NULL;
@@ -53,4 +59,29 @@ void swaylibSetLogHandler(SwaylibLogHandler handler)
 void swaylibLog(int logLevel, const char *message)
 {
     TraceLog(logLevel, "%s", message);
+}
+
+// RGFW_window_close calls RGFW_deinit once its window count reaches zero, and RGFW's macOS
+// deinit releases NSApp. Holding one extra count for the life of the process keeps that from
+// happening; RGFW_init is a no-op while the platform is still initialized, so later windows
+// open normally. RGFW never clears its root window pointer on close, so that is done here.
+void swaylibPlatformWindowOpened(void)
+{
+#if defined(__APPLE__)
+    static bool held = false;
+    RGFW_info *info = RGFW_getInfo();
+    if (!held && info != NULL)
+    {
+        info->windowCount += 1;
+        held = true;
+    }
+#endif
+}
+
+void swaylibPlatformWindowClosed(void)
+{
+#if defined(__APPLE__)
+    RGFW_info *info = RGFW_getInfo();
+    if (info != NULL && info->windowCount <= 1) info->root = NULL;
+#endif
 }

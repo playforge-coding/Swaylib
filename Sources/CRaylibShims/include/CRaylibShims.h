@@ -18,6 +18,13 @@ void swaylibSetLogHandler(SwaylibLogHandler handler);
 // Writes one line to raylib's trace log. TraceLog itself is variadic, which Swift cannot call.
 void swaylibLog(int logLevel, const char *message);
 
+// Call right after InitWindow succeeds and right after CloseWindow. On macOS they keep raylib's
+// RGFW platform from tearing itself down when the last window closes, because that teardown
+// releases NSApp, a singleton nobody owns, and the next autorelease pool drain then crashes.
+// No-ops elsewhere.
+void swaylibPlatformWindowOpened(void);
+void swaylibPlatformWindowClosed(void);
+
 #ifdef __cplusplus
 }
 #endif
