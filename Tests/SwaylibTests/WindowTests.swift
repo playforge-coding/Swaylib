@@ -120,7 +120,7 @@ struct WindowTests {
         let loadedPixel = loaded.color(atX: 3, y: 5)
         #expect(loadedPixel == .lime)
         #expect(throws: SwaylibError.loadFailed(.image, source: "/nonexistent.png")) {
-            try Image(path: "/nonexistent.png")
+            _ = try Image(path: "/nonexistent.png")
         }
     }
 
