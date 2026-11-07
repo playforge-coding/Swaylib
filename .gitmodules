@@ -1,0 +1,4 @@
+[submodule "Sources/CRaylib/raylib"]
+	path = Sources/CRaylib/raylib
+	url = https://github.com/raysan5/raylib.git
+	shallow = true

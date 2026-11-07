@@ -1,3 +1,3 @@
-// Compiles raylib's rcore module from the vendored source. Relative includes inside it
-// (platforms/..., external/...) resolve against the raylib/ directory.
-#include "raylib/rcore.c"
+// Compiles raylib's rcore module from the submodule. Relative includes inside it
+// (platforms/..., external/...) resolve against the raylib/src/ directory.
+#include "raylib/src/rcore.c"

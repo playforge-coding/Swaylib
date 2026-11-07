@@ -19,18 +19,19 @@ let package = Package(
         .default(enabledTraits: []),
     ],
     targets: [
-        // raylib's C source, vendored unmodified under raylib/. The wrapper files at the top level
-        // of the target include it, so the vendored directory itself is never compiled directly.
+        // raylib's own source, a git submodule at a tagged release under raylib/. The wrapper
+        // files at the top level of the target include it, so the submodule itself is never
+        // compiled directly.
         .target(
             name: "CRaylib",
-            exclude: ["raylib", "LICENSE", "VERSION"],
+            exclude: ["raylib"],
             sources: [
                 "rcore.c", "rshapes.c", "rtextures.c", "rtext.c", "rmodels.c", "raudio.c",
                 "rglfw.c",
             ],
             cSettings: [
-                .headerSearchPath("raylib"),
-                .headerSearchPath("raylib/external/glfw/include"),
+                .headerSearchPath("raylib/src"),
+                .headerSearchPath("raylib/src/external/glfw/include"),
                 // GLFW's Cocoa code is Objective-C without ARC, and SwiftPM compiles Objective-C
                 // with ARC on and offers no way to turn it off, so macOS uses raylib's RGFW
                 // platform instead, whose macOS backend is plain C over the Objective-C runtime.
