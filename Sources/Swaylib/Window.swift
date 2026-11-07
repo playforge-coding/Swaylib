@@ -33,13 +33,15 @@ public struct Window: ~Copyable {
         if !flags.isEmpty {
             SetConfigFlags(flags.rawValue)
         }
+        // raylib on macOS moves the working directory next to the executable while opening the
+        // window, so unattended-run paths from the environment are resolved before that.
+        Headless.configure(workingDirectory: String(cString: GetWorkingDirectory()))
         InitWindow(Int32(width), Int32(height), title)
         guard IsWindowReady() else { throw .windowFailed }
         self.title = title
         // raylib resets these when it opens a window; keep what the program chose.
         SetExitKey(Keyboard.storedExitKey.rawValue)
         SetMouseCursor(Mouse.storedCursor.rawValue)
-        Headless.start()
     }
 
     deinit {
@@ -279,10 +281,22 @@ enum Headless {
     static var screenshotPath: String?
     static var framesDrawn = 0
 
-    static func start() {
+    static func configure(workingDirectory: String) {
         frameBudget = Platform.environment("SWAYLIB_FRAMES").flatMap { Int($0) }
-        screenshotPath = Platform.environment("SWAYLIB_SCREENSHOT")
+        screenshotPath = Platform.environment("SWAYLIB_SCREENSHOT").map { path in
+            isAbsolute(path) ? path : workingDirectory + "/" + path
+        }
         framesDrawn = 0
+    }
+
+    /// `/x` on every platform; `C:\x`, `C:/x` and `\\server\x` on Windows.
+    static func isAbsolute(_ path: String) -> Bool {
+        if path.hasPrefix("/") || path.hasPrefix("\\") {
+            return true
+        }
+        let characters = Array(path.utf8)
+        return characters.count > 2 && characters[1] == UInt8(ascii: ":")
+            && (characters[2] == UInt8(ascii: "/") || characters[2] == UInt8(ascii: "\\"))
     }
 
     static var budgetExhausted: Bool {
