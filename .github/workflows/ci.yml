@@ -12,6 +12,8 @@ jobs:
     container: swift:6.4-noble
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install X11, OpenGL and Xvfb
         run: |
           apt-get update
@@ -47,6 +49,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install the pinned Swift toolchain
         run: |
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
@@ -99,6 +103,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: compnerd/gha-setup-swift@main
         with:
           swift-version: swift-6.4.2-release

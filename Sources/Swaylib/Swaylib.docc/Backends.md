@@ -50,6 +50,13 @@ let shader = try Shader(vertexPath: nil, fragmentPath: "shaders/glsl330/blur.fs"
 #endif
 ```
 
+## Why not a system raylib
+
+Swaylib always compiles raylib from its submodule and has no option to link one that is already
+installed. The backend is chosen when raylib is compiled, so a prebuilt library would fix it, and
+the generated enums and wrappers follow one exact raylib release, which is rarely the one a
+distribution or Homebrew ships.
+
 ## Zink
 
 [Zink](https://docs.mesa3d.org/drivers/zink.html) is Mesa's OpenGL implementation on top of

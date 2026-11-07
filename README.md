@@ -42,6 +42,9 @@ sudo apt install libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-d
 
 ## Try the examples
 
+raylib is a git submodule, so clone with `--recurse-submodules` (SwiftPM does that for you when
+Swaylib is a dependency). Then:
+
 ```
 swift run BasicWindow
 swift run BouncingBall
@@ -67,4 +70,5 @@ roadmap in the docs.
 
 ## License
 
-zlib, like raylib. See `LICENSE`; raylib's own license is in `Sources/CRaylib/LICENSE`.
+zlib, like raylib. See `LICENSE`; raylib's own license is in its submodule under
+`Sources/CRaylib/raylib/`.

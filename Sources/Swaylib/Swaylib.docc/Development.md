@@ -4,6 +4,10 @@ Building, testing and contributing to Swaylib itself.
 
 ## Building
 
+raylib is a git submodule, so clone with `git clone --recurse-submodules`, or run
+`git submodule update --init` in an existing clone. SwiftPM does this itself when Swaylib is used
+as a dependency.
+
 `swift build` builds raylib and the package with the default backend, `swift build --traits ANGLE`
 the OpenGL ES 3 variant. The toolchain version is pinned in `.swift-version`, which
 [swiftly](https://www.swift.org/swiftly/) reads.
@@ -28,7 +32,7 @@ swift format --in-place --recursive Sources/Swaylib Sources/CRaylibShims Tools T
 swift format lint --strict --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift
 ```
 
-The vendored raylib source is never formatted.
+The raylib submodule is never formatted.
 
 ## Generated code
 

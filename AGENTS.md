@@ -2,9 +2,9 @@
 
 ## Overview
 
-Swaylib is a set of idiomatic Swift bindings for [raylib](https://github.com/raysan5/raylib). It is cross platform first: Linux, Windows and macOS are all first-class targets, and nothing may assume Apple frameworks or Darwin APIs. Swift Package Manager is the only build system. Rendering goes through raylib's own OpenGL layer (`rlgl`), either on the system's native OpenGL driver or on [ANGLE](https://chromium.googlesource.com/angle/angle), which translates OpenGL ES to Vulkan, Direct3D 11 or Metal. [Zink](https://docs.mesa3d.org/drivers/zink.html) (Mesa's OpenGL on Vulkan) is planned for later and is low priority. License: zlib, the same as raylib (`LICENSE` at the root). Vendored third-party code keeps its own license file next to it, and nothing under a stricter license (GPL, LGPL) may be added.
+Swaylib is a set of idiomatic Swift bindings for [raylib](https://github.com/raysan5/raylib). It is cross platform first: Linux, Windows and macOS are all first-class targets, and nothing may assume Apple frameworks or Darwin APIs. Swift Package Manager is the only build system. Rendering goes through raylib's own OpenGL layer (`rlgl`), either on the system's native OpenGL driver or on [ANGLE](https://chromium.googlesource.com/angle/angle), which translates OpenGL ES to Vulkan, Direct3D 11 or Metal. [Zink](https://docs.mesa3d.org/drivers/zink.html) (Mesa's OpenGL on Vulkan) is planned for later and is low priority. License: zlib, the same as raylib (`LICENSE` at the root). Third-party code comes in as a git submodule with its own license, never as a copy, and nothing under a stricter license (GPL, LGPL) may be added.
 
-**Status:** an MVP exists. raylib 6.2 builds from source with SwiftPM, the core API is wrapped (260 of 619 raylib functions, see the generated API Coverage page), tests pass on Linux, and CI builds Windows and macOS. ANGLE compiles behind a trait but no binaries are shipped. The roadmap in `Sources/Swaylib/Swaylib.docc/Roadmap.md` tracks the rest. When code changes what this file says, update this file in the same change.
+**Status:** an MVP exists. raylib 6.2 builds from a git submodule with SwiftPM, the core API is wrapped (260 of 619 raylib functions, see the generated API Coverage page), tests pass on Linux, and CI builds Windows and macOS. ANGLE compiles behind a trait but no binaries are shipped. The roadmap in `Sources/Swaylib/Swaylib.docc/Roadmap.md` tracks the rest. When code changes what this file says, update this file in the same change.
 
 Goals:
 
@@ -17,10 +17,10 @@ Non-goals (for now): mobile, the web (Emscripten), and replacing raylib's C code
 
 ## Layout
 
-- `Sources/CRaylib/`: raylib's `src/` directory, vendored unmodified under `raylib/` at a tagged release (recorded in `VERSION`, license in `LICENSE`). SwiftPM never compiles `raylib/` directly: the wrapper files `rcore.c`, `rshapes.c`, `rtextures.c`, `rtext.c`, `rmodels.c`, `raudio.c` each include one raylib module, and `rglfw.c` includes the bundled GLFW on Linux and Windows. macOS uses raylib's RGFW platform instead (plain C over the Objective-C runtime), because GLFW's Cocoa code is Objective-C without ARC and SwiftPM compiles Objective-C with ARC on, with no per-target switch short of `unsafeFlags`, which would stop the package from being used as a dependency. `include/CRaylib.h` is the umbrella header that exposes `raylib.h`, `raymath.h` and `rlgl.h`. Keep raylib's files byte for byte as released; anything we need to change goes into a wrapper or a shim. Updating raylib is: replace `raylib/`, update `VERSION` and `Tools/Generate/raylib_api.json`, regenerate, fix what broke.
-- `Sources/CRaylibShims/`: C helpers for what Swift cannot call: the `va_list` log callback and the variadic `TraceLog`. Also the macOS workaround for RGFW releasing `NSApp` on its last window close (`swaylibPlatformWindowOpened`/`Closed`, called by `Window`), which is a vendored bug, not ours; drop it when RGFW fixes `RGFW_deinitPlatform`.
+- `Sources/CRaylib/`: raylib's repository as a shallow git submodule under `raylib/`, pinned to a release tag; the pinned commit is the version and the license is inside. Clone with `--recurse-submodules` (SwiftPM initializes submodules itself for dependents). SwiftPM never compiles `raylib/` directly: the wrapper files `rcore.c`, `rshapes.c`, `rtextures.c`, `rtext.c`, `rmodels.c`, `raudio.c` each include one raylib module from `raylib/src/`, and `rglfw.c` includes the bundled GLFW on Linux and Windows. macOS uses raylib's RGFW platform instead (plain C over the Objective-C runtime), because GLFW's Cocoa code is Objective-C without ARC and SwiftPM compiles Objective-C with ARC on, with no per-target switch short of `unsafeFlags`, which would stop the package from being used as a dependency. `include/CRaylib.h` is the umbrella header that exposes `raylib.h`, `raymath.h` and `rlgl.h`. Never modify the submodule; anything we need to change goes into a wrapper or a shim. Updating raylib is: move the submodule to the new tag, regenerate, fix what broke. There is deliberately no option to link a system raylib: the bindings are tied to one raylib release, and almost nobody has exactly that one installed.
+- `Sources/CRaylibShims/`: C helpers for what Swift cannot call: the `va_list` log callback and the variadic `TraceLog`. Also the macOS workaround for RGFW releasing `NSApp` on its last window close (`swaylibPlatformWindowOpened`/`Closed`, called by `Window`), which is an upstream bug, not ours; drop it when RGFW fixes `RGFW_deinitPlatform`. It compiles to nothing when the system raylib is in use, since a system raylib on macOS is built on GLFW.
 - `Sources/Swaylib/`: the Swift API. `Math/` has the vectors, matrix, quaternion and rectangle; `Color.swift`, `Window.swift` (also `Time`, `Random` and the unattended-run support), `Drawing.swift` (the scoped `Begin`/`End` functions and the `Draw` namespace), `Camera.swift`, `Input.swift`, `Image.swift`, `Texture.swift` (also `RenderTexture`), `Font.swift`, `Shader.swift`, `Audio.swift`, `Log.swift`, `Errors.swift`. `Platform.swift` is the only file that imports the C runtime (for `getenv`). `Generated/` is written by the generator and never edited by hand. `Swaylib.docc/` is the DocC catalog.
-- `Tools/Generate/`: the `swaylib-generate` executable, `raylib_api.json` (raylib's `tools/rlparser/output/raylib_api.json` from the vendored release) and `wrapped.txt`, the list of raylib functions that have a Swift counterpart.
+- `Tools/Generate/`: the `swaylib-generate` executable and `wrapped.txt`, the list of raylib functions that have a Swift counterpart. It reads `raylib_api.json` from the submodule (`tools/rlparser/output/`), so the generated code always matches the pinned release.
 - `Examples/`: ports of raylib's examples, one executable target each (`BasicWindow`, `BouncingBall`, `RenderTextures`, `Camera3D`). Each is also a smoke test on CI.
 - `Tests/SwaylibTests/`: Swift Testing suites.
 - `.github/workflows/ci.yml`: Linux (lint, generator check, build, ANGLE build, tests under Xvfb, examples, docs), macOS (build, tests, examples) and Windows (build, tests without a window).
@@ -79,7 +79,7 @@ Use fast, modern tools instead of the slow defaults:
 - [`rg`](https://github.com/BurntSushi/ripgrep) (ripgrep) for text search, not `grep`. It respects `.gitignore` for you. **NOTE**: Prefer to use [`ast-grep`](https://ast-grep.github.io) when applicable as it uses the structure of the code instead.
 - [`fd`](https://github.com/sharkdp/fd) for finding files by name, not `find`.
 - [`ast-grep`](https://ast-grep.github.io) for structural searches and rewrites, like finding every call to a function or every type that conforms to a protocol. It supports both Swift and C. Call it as `ast-grep`. The `sg` alias is deprecated, so don't use it.
-- `jq` for reading and querying JSON, including `raylib_api.json`.
+- `jq` for reading and querying JSON, including the submodule's `raylib_api.json`.
 
 If your harness has dedicated search or file tools that already wrap these, those are fine too.
 
@@ -89,7 +89,7 @@ Always lint and format:
 
 - `swift format` (ships with the toolchain) formats and lints. Config lives in `.swift-format` at the root. `swift format --in-place --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift` fixes, `swift format lint --strict --recursive` over the same paths reports. CI runs the lint. The generator's output must pass it too.
 - `.editorconfig`: UTF-8, LF, 4 spaces, 120 columns for Swift; 2 spaces for Markdown, TOML, YAML and JSON.
-- Do not format or lint the vendored raylib source.
+- Do not format or lint the raylib submodule.
 
 Use modern code practices:
 

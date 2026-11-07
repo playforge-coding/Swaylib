@@ -21,8 +21,9 @@ let package = Package(
 )
 ```
 
-raylib is compiled from source as part of the build. On Linux that needs the X11 development
-headers and OpenGL headers; see <doc:Platforms> for the package names.
+raylib is compiled from source as part of the build (SwiftPM fetches it as a git submodule of
+Swaylib). On Linux that needs the X11 development headers and OpenGL headers; see <doc:Platforms>
+for the package names.
 
 ## Open a window and draw
 

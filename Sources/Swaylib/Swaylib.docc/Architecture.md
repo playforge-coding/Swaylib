@@ -9,25 +9,25 @@ parts of the top one.
 
 ## CRaylib
 
-raylib's `src/` directory, vendored unmodified at a tagged release under `Sources/CRaylib/raylib/`
-with the release recorded in `Sources/CRaylib/VERSION`. SwiftPM never compiles that directory
-directly. Instead, wrapper files at the top of the target (`rcore.c`, `rshapes.c`, and so on) each
-include one raylib module, and `rglfw.c` includes GLFW on Linux and Windows. On macOS raylib uses
-its RGFW platform instead, which is plain C: GLFW's Cocoa code is Objective-C without ARC, and
-SwiftPM compiles Objective-C with ARC on with no way to turn it off.
+raylib's own repository is a git submodule at a tagged release under `Sources/CRaylib/raylib/`,
+so its files are never touched and the pinned commit is the version. SwiftPM never compiles the submodule directly. Instead, wrapper files at the top of the
+target (`rcore.c`, `rshapes.c`, and so on) each include one raylib module from `raylib/src/`, and
+`rglfw.c` includes GLFW on Linux and Windows. On macOS raylib uses its RGFW platform instead, which
+is plain C: GLFW's Cocoa code is Objective-C without ARC, and SwiftPM compiles Objective-C with ARC
+on with no way to turn it off.
 
 Compile settings in `Package.swift` select raylib's GLFW desktop platform on Linux and Windows and
-RGFW on macOS, X11 on Linux, and OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header `include/CRaylib.h` exposes
-`raylib.h`, `raymath.h` and `rlgl.h` to Swift as one module.
+RGFW on macOS, X11 on Linux, and OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header
+`include/CRaylib.h` exposes `raylib.h`, `raymath.h` and `rlgl.h` to Swift as one module.
 
-Updating raylib means replacing the vendored directory with the new release's `src/`, updating
-`VERSION` and `Tools/Generate/raylib_api.json`, regenerating, and fixing whatever changed.
+Updating raylib means moving the submodule to the new tag, regenerating, and fixing whatever
+changed.
 
 ## CRaylibShims
 
 A few C functions for things Swift cannot call: raylib's log callback takes a `va_list`, so the
 shim formats the message and hands Swift a plain string, and `TraceLog` is variadic, so the shim
-logs one preformatted line.
+logs one preformatted line. It also holds the macOS keep-alive for RGFW.
 
 ## Swaylib
 
@@ -52,7 +52,7 @@ generator. Everything else is by hand.
 
 ## The generator
 
-`swift run swaylib-generate` reads `Tools/Generate/raylib_api.json`, the parser output raylib ships,
-and writes the generated Swift plus the <doc:APICoverage> page from `Tools/Generate/wrapped.txt`,
+`swift run swaylib-generate` reads `raylib_api.json`, the parser output raylib ships, from the
+submodule (`tools/rlparser/output/`), so it always describes the raylib being built, and writes the generated Swift plus the <doc:APICoverage> page from `Tools/Generate/wrapped.txt`,
 the list of raylib functions that have a Swift counterpart. With `--check` it only reports whether
 the committed files are up to date, which CI uses.
