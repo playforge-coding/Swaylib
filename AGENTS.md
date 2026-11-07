@@ -4,7 +4,7 @@
 
 Swaylib is a set of idiomatic Swift bindings for [raylib](https://github.com/raysan5/raylib). It is cross platform first: Linux, Windows and macOS are all first-class targets, and nothing may assume Apple frameworks or Darwin APIs. Swift Package Manager is the only build system. Rendering goes through raylib's own OpenGL layer (`rlgl`), either on the system's native OpenGL driver or on [ANGLE](https://chromium.googlesource.com/angle/angle), which translates OpenGL ES to Vulkan, Direct3D 11 or Metal. [Zink](https://docs.mesa3d.org/drivers/zink.html) (Mesa's OpenGL on Vulkan) is planned for later and is low priority. License: zlib, the same as raylib (`LICENSE` at the root). Vendored third-party code keeps its own license file next to it, and nothing under a stricter license (GPL, LGPL) may be added.
 
-**Status:** nothing is built yet. This file describes the plan. When code lands and differs from what is written here, update this file in the same change.
+**Status:** an MVP exists. raylib 6.2 builds from source with SwiftPM, the core API is wrapped (260 of 619 raylib functions, see the generated API Coverage page), tests pass on Linux, and CI builds Windows and macOS. ANGLE compiles behind a trait but no binaries are shipped. The roadmap in `Sources/Swaylib/Swaylib.docc/Roadmap.md` tracks the rest. When code changes what this file says, update this file in the same change.
 
 Goals:
 
@@ -15,62 +15,61 @@ Goals:
 
 Non-goals (for now): mobile, the web (Emscripten), and replacing raylib's C code with Swift. Swaylib wraps raylib; it does not reimplement it.
 
-## Planned layout
+## Layout
 
-- `Sources/CRaylib/`: raylib's C source, vendored at a tagged release, compiled by SwiftPM as a C target. raylib's `rglfw.c` builds GLFW in the same target, so no CMake and no system GLFW are needed. Keep raylib's files unmodified. Anything we need to change goes into a separate shim file or a `config.h` override, so updating raylib is a copy plus a diff review. Record the vendored version and commit in `Sources/CRaylib/VERSION`.
-- `Sources/CRaylibShims/`: small C helpers for things Swift cannot call directly, such as raylib's `va_list` log callback and macros that do not import.
-- `Sources/Swaylib/`: the Swift API. This is the module users import.
-- `Sources/SwaylibMath/` (maybe folded into `Swaylib`): vectors, matrices, quaternions and `raymath` operations as Swift operators and methods.
-- `Plugins/` and `Tools/`: the binding generator (see below) and any build tool plugins.
-- `Examples/`: ports of raylib's examples as executable targets. Each one is also a smoke test.
-- `Tests/`: Swift Testing suites, including render tests that compare against reference images.
-- `Sources/Swaylib/Swaylib.docc/`: the DocC catalog with the articles and tutorials. There is no separate docs site.
+- `Sources/CRaylib/`: raylib's `src/` directory, vendored unmodified under `raylib/` at a tagged release (recorded in `VERSION`, license in `LICENSE`). SwiftPM never compiles `raylib/` directly: the wrapper files `rcore.c`, `rshapes.c`, `rtextures.c`, `rtext.c`, `rmodels.c`, `raudio.c` each include one raylib module, and `rglfw.c` (everywhere else) and `rglfw.m` (Apple, because GLFW's Cocoa code is Objective-C) include the bundled GLFW. `include/CRaylib.h` is the umbrella header that exposes `raylib.h`, `raymath.h` and `rlgl.h`. Keep raylib's files byte for byte as released; anything we need to change goes into a wrapper or a shim. Updating raylib is: replace `raylib/`, update `VERSION` and `Tools/Generate/raylib_api.json`, regenerate, fix what broke.
+- `Sources/CRaylibShims/`: C helpers for what Swift cannot call: the `va_list` log callback and the variadic `TraceLog`.
+- `Sources/Swaylib/`: the Swift API. `Math/` has the vectors, matrix, quaternion and rectangle; `Color.swift`, `Window.swift` (also `Time`, `Random` and the unattended-run support), `Drawing.swift` (the scoped `Begin`/`End` functions and the `Draw` namespace), `Camera.swift`, `Input.swift`, `Image.swift`, `Texture.swift` (also `RenderTexture`), `Font.swift`, `Shader.swift`, `Audio.swift`, `Log.swift`, `Errors.swift`. `Platform.swift` is the only file that imports the C runtime (for `getenv`). `Generated/` is written by the generator and never edited by hand. `Swaylib.docc/` is the DocC catalog.
+- `Tools/Generate/`: the `swaylib-generate` executable, `raylib_api.json` (raylib's `tools/rlparser/output/raylib_api.json` from the vendored release) and `wrapped.txt`, the list of raylib functions that have a Swift counterpart.
+- `Examples/`: ports of raylib's examples, one executable target each (`BasicWindow`, `BouncingBall`, `RenderTextures`, `Camera3D`). Each is also a smoke test on CI.
+- `Tests/SwaylibTests/`: Swift Testing suites.
+- `.github/workflows/ci.yml`: Linux (lint, generator check, build, ANGLE build, tests under Xvfb, examples, docs), macOS (build, tests, examples) and Windows (build, tests without a window).
 
-Generated code is committed. The generator reads raylib's `parser/output/raylib_api.json` (shipped with raylib) and emits the mechanical parts: enums (keys, mouse buttons, gamepad axes, config flags, blend modes, pixel formats), constants and the raw function list used to check coverage. Hand-written Swift sits on top of that. CI regenerates and fails if the output differs from what is committed.
+The generator reads `raylib_api.json` and emits the mechanical parts: enums and option sets (`Generated/Enums.swift`), the named colors (`Generated/Colors.swift`), and the API Coverage article (`Swaylib.docc/APICoverage.md`), which lists every raylib function with the Swift symbol from `wrapped.txt`. Generated output is committed. `swift run swaylib-generate --check` fails when it is stale, and CI runs that.
 
 ## Graphics backends
 
 raylib picks its graphics API when it is compiled (`GRAPHICS_API_OPENGL_33`, `GRAPHICS_API_OPENGL_ES3` and so on), not at runtime. So does Swaylib. Backends are SwiftPM package traits that set the C defines on `CRaylib`:
 
-- `OpenGL` (native desktop OpenGL 3.3): default on Linux and Windows.
-- `ANGLE`: raylib built for OpenGL ES 3, with GLFW told to create an EGL context. GLFW loads `libEGL` and `libGLESv2` at runtime, so ANGLE ships as shared libraries next to the executable instead of being linked. ANGLE's own backend (Vulkan, D3D11, Metal, OpenGL) is chosen at window creation through GLFW's `GLFW_ANGLE_PLATFORM_TYPE` hint and exposed in Swift as a window option. Planned default on macOS, where Apple's OpenGL is deprecated.
-- `Zink` (later): native OpenGL path pointed at a Mesa build with the Zink driver. Do not spend time on this until the other two are solid, and do not let Zink concerns shape the API.
+- Default (no trait): desktop OpenGL 3.3, which is rlgl's own default when nothing is defined.
+- `ANGLE`: raylib built for OpenGL ES 3, and raylib tells GLFW to create an EGL context. GLFW loads `libEGL` and `libGLESv2` at runtime, so ANGLE ships as shared libraries next to the executable instead of being linked. ANGLE's own backend (Vulkan, D3D11, Metal, OpenGL) is chosen at window creation through GLFW's `GLFW_ANGLE_PLATFORM_TYPE` hint; exposing that in Swift, and fetching ANGLE binaries, are roadmap items. Planned default on macOS, where Apple's OpenGL is deprecated.
+- Zink (later): native OpenGL path pointed at a Mesa build with the Zink driver. Do not spend time on this until the other two are solid, and do not let Zink concerns shape the API.
 
 Rules:
 
 - The Swift API must be identical under every backend. If a feature only exists on one (for example a desktop OpenGL extension), it gets a runtime capability check, not a separate API.
-- Shader code differs between GLSL 330 and GLSL ES 300. Examples and tests that use shaders ship both, picked by the active backend.
+- Shader code differs between GLSL 330 and GLSL ES 300. Examples and tests that use shaders ship both, picked with `#if ANGLE`.
 - Getting ANGLE binaries is the hard part. Prefer prebuilt, versioned ANGLE releases fetched by a script with checksums. Never require users to install depot_tools to build Swaylib.
 
 ## Platform support
 
-- Linux: X11 and Wayland, both through GLFW. Wayland needs the protocol headers that GLFW generates with `wayland-scanner`; check how the vendored raylib version handles this before assuming it works.
-- Windows: MSVC toolchain through the Swift for Windows installer. Links `opengl32`, `gdi32` and `winmm`.
-- macOS: Cocoa through GLFW. Native OpenGL works but is deprecated, which is why ANGLE on Metal is the intended default there.
+- Linux: X11 through GLFW (`_GLFW_X11`). Building needs the X11 and OpenGL headers (`libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev`); GLFW loads the X11 extensions and `libGL` at runtime. Wayland sessions work through XWayland. Native Wayland needs protocol headers generated by `wayland-scanner`, which raylib's Makefile runs and SwiftPM cannot, so it is a roadmap item.
+- Windows: the Swift toolchain for Windows. Links `opengl32`, `gdi32`, `winmm`, `user32` and `shell32`. CI builds and runs the non-window tests; nobody has run it by hand yet.
+- macOS: Cocoa through GLFW, compiled as Objective-C by `rglfw.m`. Links AppKit, IOKit, CoreVideo, QuartzCore, OpenGL and CoreAudio. Native OpenGL works but is deprecated, which is why ANGLE on Metal is the intended default there.
 
-Platform-specific linker and define settings live in `Package.swift` with `.when(platforms:)`. Platform checks in Swift source are allowed only inside `Swaylib`, never in examples, and should be rare.
+Platform-specific linker and define settings live in `Package.swift` with `.when(platforms:)`. Platform checks in Swift source are allowed only inside `Swaylib`, never in examples, and should be rare (today: `Platform.swift` only).
 
 ## API design rules
 
-- raylib is single threaded and not reentrant. Every public API that touches the window, input, audio device or GPU is `@MainActor`. The package builds in the Swift 6 language mode with complete concurrency checking. Pure value types (vectors, colors, rectangles, math) are `Sendable` and not actor isolated.
-- GPU and audio resources (`Texture`, `RenderTexture`, `Shader`, `Font`, `Model`, `Mesh`, `Sound`, `Music`, `Image`) own their raylib handle and unload it in `deinit`. Use noncopyable types (`~Copyable`) where shared ownership would be wrong, and a final class only when the resource really needs to be shared. Never leave unloading to the user.
-- Loading functions `throw` a typed error instead of returning a struct the caller has to check with `IsTextureValid` and friends.
-- Paired `Begin`/`End` calls become scoped closures: `drawing { }`, `mode2D(camera) { }`, `textureMode(target) { }`, `shaderMode(shader) { }`, `blendMode(.additive) { }`, `scissor(rect) { }`. A mismatched `End` must be impossible to write.
-- C enums and flag sets become Swift enums and `OptionSet`s. Integers that mean a key or a button never appear in the public API.
-- Use Swift naming: `Window.shouldClose`, `texture.draw(at:tint:)`, `Color.rayWhite`. Keep raylib's terminology (texture, render texture, mode 2D) so its docs and cheatsheet still help.
-- Math types support the operators you would expect (`+`, `-`, `*`, scalar multiply, dot and cross as methods) and are layout compatible with raylib's C structs so passing them across costs nothing. Check that compatibility with tests, not comments.
-- Strings go in as Swift `String`; no `UnsafePointer<CChar>` in the public API. Same for arrays and buffers: offer `Span`/`[T]` based API, keep raw pointers internal or behind clearly named `unsafe` entry points.
-- Do not hide raylib behind a game engine. No entity systems, scene graphs or app frameworks in `Swaylib`. A thin optional `Game` protocol for the main loop is fine if it stays optional.
+- raylib is single threaded and not reentrant. Every public API that touches the window, input, audio device, GPU or raylib's other global state is `@MainActor`. The package builds in the Swift 6 language mode with complete concurrency checking. Pure value types (vectors, colors, rectangles, math) are `Sendable` and not actor isolated.
+- GPU and audio resources (`Texture`, `RenderTexture`, `Shader`, `Font`, `Image`, `Sound`, `Music`, `AudioDevice`, `Window`) are noncopyable structs (`~Copyable`) that own their raylib handle and unload it in `deinit`. Never leave unloading to the user. Use a class only when a resource really needs shared ownership.
+- Loading functions `throw(SwaylibError)` instead of returning a struct the caller has to check with `IsTextureValid` and friends.
+- Paired `Begin`/`End` calls are scoped closures: `drawing { }`, `mode2D(camera) { }`, `mode3D(camera) { }`, `textureMode(target) { }`, `shaderMode(shader) { }`, `blendMode(.additive) { }`, `scissorMode(area) { }`. A mismatched `End` must be impossible to write.
+- C enums and flag sets are generated Swift enums and `OptionSet`s. Integers that mean a key or a button never appear in the public API.
+- Use Swift naming: `Window.shouldClose`, `texture.draw(at:tint:)`, `Color.rayWhite`. Keep raylib's terminology (texture, render texture, mode 2D) so its docs and cheatsheet still help. raylib's free functions live in namespaces: `Draw`, `Keyboard`, `Mouse`, `Time`, `Log`, `Random`.
+- Math types support the operators you would expect (`+`, `-`, `*`, scalar multiply, dot and cross as methods) and are layout compatible with raylib's C structs so passing them across costs nothing. `ValueTypeTests` checks the layouts; keep it in step when adding a type.
+- Strings go in as Swift `String`; no `UnsafePointer<CChar>` in the public API. Same for arrays and buffers: offer `[T]` (and later `Span`) based API, keep raw pointers internal.
+- Do not hide raylib behind a game engine. No entity systems, scene graphs or app frameworks in `Swaylib`.
+- Swift Testing's `#expect` cannot expand member accesses on noncopyable values. In tests, read `window.width` and friends into locals first.
 
 ## Building and testing
 
-These are the intended commands. Fix this section once they actually exist.
-
-- `swift build` builds everything with the default backend. `swift build --traits ANGLE` builds the ANGLE variant.
-- `swift test` runs the Swift Testing suites. Render tests draw into a `RenderTexture`, read it back and compare against reference PNGs in `Tests/.../Resources/` with a small tolerance. On CI they run under ANGLE's SwiftShader (CPU Vulkan) or Mesa's llvmpipe, so no GPU is needed. Update reference images only on purpose, and say so in the commit.
-- `swift run <Example>` runs an example. Examples should accept an environment variable that renders a fixed number of frames, saves a screenshot and exits, so they can be checked without a person watching.
-- CI builds and tests on Linux, Windows and macOS, with every backend that platform supports. A change that only builds on the platform you happen to be on is not done.
-- When adding raylib API: regenerate if it touches generated code, write the Swift wrapper, cover it with a test or an example, and update the coverage list in the docs.
+- `swift build` builds raylib and everything else with the default backend; `swift build --traits ANGLE` the OpenGL ES 3 variant. Requires the Swift version in `.swift-version` (swiftly installs it) and, on Linux, the X11 and OpenGL headers listed above.
+- `swift test` runs the Swift Testing suites. `ValueTypeTests`, `GeneratedEnumTests` and `CRaylibTests` run anywhere. `WindowTests` opens a hidden window and draws into render textures, so it is enabled when `DISPLAY` is set on Linux (CI uses `xvfb-run -a swift test`), always on macOS, and only with `SWAYLIB_WINDOW_TESTS=1` on Windows; `SWAYLIB_WINDOW_TESTS=0` skips it anywhere. Render tests check specific pixels rather than comparing reference images.
+- Every program using Swaylib honors `SWAYLIB_FRAMES=<n>` (close after `n` frames drawn with `drawing { }`) and `SWAYLIB_SCREENSHOT=<file.png>` (save the last of them). `SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=out.png swift run BasicWindow` is how to check an example without a person watching; CI does this for every example and uploads the screenshots.
+- `swift run swaylib-generate` regenerates `Sources/Swaylib/Generated/` and the API Coverage page; `--check` only verifies. Run it after touching `Tools/Generate/` or `wrapped.txt`.
+- CI builds and tests on Linux, Windows and macOS. A change that only builds on the platform you happen to be on is not done. When a CI job fails on a platform you cannot run, read the log and fix it; do not disable the job.
+- When adding raylib API: write the wrapper with a doc comment, add a line per C function to `Tools/Generate/wrapped.txt`, regenerate, cover it with a test or an example, and list any new public type under a topic in `Swaylib.docc/Swaylib.md`.
 
 ## Searching the Codebase
 
@@ -87,23 +86,23 @@ If your harness has dedicated search or file tools that already wrap these, thos
 
 Always lint and format:
 
-- `swift format` (ships with the toolchain) formats and lints. Config lives in `.swift-format` at the root. `swift format --in-place --recursive Sources Tests Examples` fixes, `swift format lint --strict --recursive Sources Tests Examples` reports. CI runs the lint.
+- `swift format` (ships with the toolchain) formats and lints. Config lives in `.swift-format` at the root. `swift format --in-place --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift` fixes, `swift format lint --strict --recursive` over the same paths reports. CI runs the lint. The generator's output must pass it too.
 - `.editorconfig`: UTF-8, LF, 4 spaces, 120 columns for Swift; 2 spaces for Markdown, TOML, YAML and JSON.
 - Do not format or lint the vendored raylib source.
 
 Use modern code practices:
 
-- The latest stable Swift 6 release, Swift 6 language mode, complete strict concurrency. Pin the toolchain in `.swift-version` (read by swiftly).
+- The latest stable Swift 6 release, Swift 6 language mode, complete strict concurrency. The toolchain is pinned in `.swift-version` (read by swiftly); `Package.swift` asks for tools version 6.2 so that users on 6.2 and newer can depend on the package.
 - Swift Testing (`import Testing`, `@Test`, `#expect`), not XCTest.
 - Typed throws, noncopyable types, `Span` and package traits are all fair game. Use them where they make the API better, not to show off.
-- Use Foundation sparingly. It is fine for tests and tools, but `Swaylib` itself should not need it, which keeps binaries small on Linux and Windows.
-- No dependency gets added without a reason. Use the standard library and raylib first.
+- Use Foundation sparingly. It is fine for tests and the generator, but `Swaylib` itself does not import it, which keeps binaries small on Linux and Windows.
+- No dependency gets added without a reason. Use the standard library and raylib first. The only package dependency is the Swift-DocC plugin.
 
 ## Docs (IMPORTANT!!!)
 
 Always update the docs if necessary when changing or adding code. If the docs already contain outdated information, expand your scope to cover that info too.
 
-The docs are DocC only. Every public symbol gets a `///` doc comment, and longer material is written as articles in `Sources/Swaylib/Swaylib.docc/`. Build and check them with the [Swift-DocC plugin](https://github.com/swiftlang/swift-docc-plugin) (`swift package generate-documentation --target Swaylib --warnings-as-errors`), which CI runs, so broken symbol links fail the build. Planned articles: `GettingStarted.md`, `Backends.md` (native OpenGL, ANGLE, Zink, and how to pick one), `Platforms.md`, `APICoverage.md` (which raylib functions are wrapped, kept in step with the generator), `Architecture.md`, `Development.md`, `Roadmap.md`. Topic groups in `Swaylib.md` (the catalog's landing page) must list every public type, so nothing ends up in an unsorted "Other" section.
+The docs are DocC only. Every public symbol gets a `///` doc comment, and longer material is written as articles in `Sources/Swaylib/Swaylib.docc/`. Build and check them with the [Swift-DocC plugin](https://github.com/swiftlang/swift-docc-plugin) (`swift package generate-documentation --target Swaylib --warnings-as-errors`), which CI runs, so broken symbol links fail the build. Articles: `GettingStarted.md`, `Backends.md` (native OpenGL, ANGLE, Zink, and how to pick one), `Platforms.md`, `APICoverage.md` (generated, never edited by hand), `Architecture.md`, `Development.md`, `Roadmap.md`. Topic groups in `Swaylib.md` (the catalog's landing page) must list every public type, so nothing ends up in an unsorted "Other" section.
 
 When a roadmap item is finished, check it off (`- [x]`) where it is. DO NOT move it into an earlier section like "Done: the MVP". The roadmap shows how each goal is progressing, so finished items stay with the section they belong to.
 

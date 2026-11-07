@@ -1,0 +1,70 @@
+# Swaylib
+
+Idiomatic Swift bindings for [raylib](https://www.raylib.com), for Linux, Windows and macOS.
+
+raylib is compiled into your program by Swift Package Manager, GLFW included, so there is nothing to
+install beyond a Swift toolchain (and on Linux the X11 and OpenGL headers). Rendering uses the
+system's OpenGL by default, or OpenGL ES through [ANGLE](https://chromium.googlesource.com/angle/angle)
+with the `ANGLE` package trait.
+
+```swift
+import Swaylib
+
+var window = try Window(width: 800, height: 450, title: "Hello")
+window.targetFPS = 60
+
+while !window.shouldClose {
+    drawing {
+        Draw.clearBackground(.rayWhite)
+        Draw.circle(center: Mouse.position, radius: 30, color: .maroon)
+        Draw.text("Hello from Swift", x: 190, y: 200, color: .lightGray)
+    }
+}
+```
+
+Resources unload themselves when they go out of scope, loading throws instead of handing back
+something to check, `Begin`/`End` pairs are closures, and everything that touches the window runs on
+the main actor. The names follow raylib's, so its cheatsheet still applies.
+
+## Use it
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/playforge-coding/Swaylib.git", branch: "main"),
+],
+```
+
+Needs Swift 6.2 or newer. On Debian or Ubuntu, first:
+
+```
+sudo apt install libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev
+```
+
+## Try the examples
+
+```
+swift run BasicWindow
+swift run BouncingBall
+swift run RenderTextures
+swift run Camera3D
+```
+
+Set `SWAYLIB_FRAMES=60 SWAYLIB_SCREENSHOT=out.png` to have any of them draw 60 frames, save a
+screenshot and exit.
+
+## Documentation
+
+The DocC catalog in `Sources/Swaylib/Swaylib.docc/` has a getting started guide, the backend and
+platform notes, the architecture, a roadmap, and a generated page listing which of raylib's
+functions are wrapped (260 of 619 so far). Build it with
+`swift package generate-documentation --target Swaylib`.
+
+## Status
+
+An MVP. The core of raylib is wrapped and tested on Linux; Windows and macOS build on CI but have
+not been checked by a person yet. ANGLE compiles but Swaylib does not ship its binaries. See the
+roadmap in the docs.
+
+## License
+
+zlib, like raylib. See `LICENSE`; raylib's own license is in `Sources/CRaylib/LICENSE`.

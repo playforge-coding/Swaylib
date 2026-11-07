@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-24.04
+    container: swift:6.4-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install X11, OpenGL and Xvfb
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev \
+            xvfb mesa-utils
+      - name: Lint
+        run: swift format lint --strict --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift
+      - name: Generated code is up to date
+        run: swift run swaylib-generate --check
+      - name: Build
+        run: swift build
+      - name: Build with the ANGLE trait
+        run: swift build --traits ANGLE
+      - name: Test
+        run: xvfb-run -a swift test
+      - name: Run the examples unattended
+        run: |
+          mkdir -p screenshots
+          for example in BasicWindow BouncingBall RenderTextures Camera3D; do
+            SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=screenshots/$example.png xvfb-run -a swift run $example
+            test -s screenshots/$example.png
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-linux
+          path: screenshots
+      - name: Documentation
+        run: swift package generate-documentation --target Swaylib --warnings-as-errors
+
+  macos:
+    name: macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned Swift toolchain
+        run: |
+          curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
+          installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
+          ~/.swiftly/bin/swiftly init --quiet-shell-followup --assume-yes --skip-install
+          . ~/.swiftly/env.sh
+          swiftly install --use --assume-yes
+          echo "$HOME/.swiftly/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test
+      - name: Run the examples unattended
+        run: |
+          mkdir -p screenshots
+          for example in BasicWindow BouncingBall RenderTextures Camera3D; do
+            SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=screenshots/$example.png swift run $example
+            test -s screenshots/$example.png
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-macos
+          path: screenshots
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.4-release
+          swift-build: 6.4.2-RELEASE
+      - name: Build
+        run: swift build
+      - name: Test without a window
+        run: swift test
