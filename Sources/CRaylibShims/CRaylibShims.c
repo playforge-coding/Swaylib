@@ -2,7 +2,6 @@
 
 #include <stdarg.h>
 #include <stdatomic.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,27 +60,21 @@ void swaylibLog(int logLevel, const char *message)
     TraceLog(logLevel, "%s", message);
 }
 
-// RGFW_window_close calls RGFW_deinit once its window count reaches zero, and RGFW's macOS
-// deinit releases NSApp. Holding one extra count for the life of the process keeps that from
-// happening; RGFW_init is a no-op while the platform is still initialized, so later windows
-// open normally. RGFW never clears its root window pointer on close, so that is done here.
+// RGFW_window_close calls RGFW_deinit once the last window closes, and RGFW's macOS deinit
+// releases NSApp. The RGFW_noDeinitOnClose flag skips that; RGFW stays initialized for the life
+// of the process and later windows open normally. RGFW never clears its root window pointer on
+// close, so that is done here, which also makes the next window the root again.
 void swaylibPlatformWindowOpened(void)
 {
 #if defined(__APPLE__)
-    static bool held = false;
-    RGFW_info *info = RGFW_getInfo();
-    if (!held && info != NULL)
-    {
-        info->windowCount += 1;
-        held = true;
-    }
+    RGFW_window *window = RGFW_getRootWindow();
+    if (window != NULL) RGFW_window_setFlags(window, RGFW_window_getFlags(window) | RGFW_noDeinitOnClose);
 #endif
 }
 
 void swaylibPlatformWindowClosed(void)
 {
 #if defined(__APPLE__)
-    RGFW_info *info = RGFW_getInfo();
-    if (info != NULL && info->windowCount <= 1) info->root = NULL;
+    RGFW_setRootWindow(NULL);
 #endif
 }
