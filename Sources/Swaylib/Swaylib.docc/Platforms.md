@@ -46,6 +46,10 @@ the window opens, like raylib's own macOS builds do. Load assets after creating 
 paths relative to the executable, or use absolute paths. Swaylib resolves `SWAYLIB_SCREENSHOT`
 against the original working directory for you.
 
+RGFW 6.2 also releases `NSApp` when its last window closes, which would crash the program the
+next time an autorelease pool drains. Swaylib works around that by keeping RGFW initialized for
+the life of the process, so closing a ``Window`` and opening another is safe.
+
 Apple's OpenGL is deprecated but still present, and that is what the default backend uses. ANGLE on
 Metal is the intended default for macOS once Swaylib can ship ANGLE binaries; see <doc:Backends>.
 
