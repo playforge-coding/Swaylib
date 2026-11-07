@@ -1,0 +1,7 @@
+raylib 6.2
+Tag: 6.2
+Commit: 02566453880e06bec97f5b8160fa6fe1e98397ca
+Source: https://github.com/raysan5/raylib/archive/refs/tags/6.2.tar.gz
+
+raylib/ is a verbatim copy of the src/ directory of that release.
+raylib_api.json in Tools/Generate/ is tools/rlparser/output/raylib_api.json from the same release.
