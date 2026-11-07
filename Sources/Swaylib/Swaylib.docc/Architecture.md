@@ -12,11 +12,12 @@ parts of the top one.
 raylib's `src/` directory, vendored unmodified at a tagged release under `Sources/CRaylib/raylib/`
 with the release recorded in `Sources/CRaylib/VERSION`. SwiftPM never compiles that directory
 directly. Instead, wrapper files at the top of the target (`rcore.c`, `rshapes.c`, and so on) each
-include one raylib module, and `rglfw.c` and `rglfw.m` include GLFW, as C everywhere except Apple
-platforms, where GLFW's Cocoa code needs Objective-C.
+include one raylib module, and `rglfw.c` includes GLFW on Linux and Windows. On macOS raylib uses
+its RGFW platform instead, which is plain C: GLFW's Cocoa code is Objective-C without ARC, and
+SwiftPM compiles Objective-C with ARC on with no way to turn it off.
 
-Compile settings in `Package.swift` select raylib's GLFW desktop platform, X11 on Linux, and
-OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header `include/CRaylib.h` exposes
+Compile settings in `Package.swift` select raylib's GLFW desktop platform on Linux and Windows and
+RGFW on macOS, X11 on Linux, and OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header `include/CRaylib.h` exposes
 `raylib.h`, `raymath.h` and `rlgl.h` to Swift as one module.
 
 Updating raylib means replacing the vendored directory with the new release's `src/`, updating

@@ -35,9 +35,11 @@ to run them on a machine that has one. Treat Windows as building but not yet ver
 ## macOS
 
 Needs macOS 15 or newer (for the standard library's `Mutex`) and the Swift toolchain, either
-from Xcode or from swift.org. GLFW's Cocoa
-backend is compiled as Objective-C, and raylib links the AppKit, IOKit, CoreVideo, QuartzCore,
-OpenGL and CoreAudio frameworks.
+from Xcode or from swift.org. On macOS raylib
+uses its RGFW platform rather than GLFW: GLFW's Cocoa code is Objective-C without ARC, SwiftPM
+compiles Objective-C with ARC and cannot be told otherwise, and RGFW's macOS backend is plain C
+over the Objective-C runtime. raylib links the AppKit, IOKit, CoreVideo, QuartzCore, OpenGL and
+CoreAudio frameworks.
 
 Apple's OpenGL is deprecated but still present, and that is what the default backend uses. ANGLE on
 Metal is the intended default for macOS once Swaylib can ship ANGLE binaries; see <doc:Backends>.
