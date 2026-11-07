@@ -13,7 +13,7 @@ Where Swaylib is and where it is going. Finished items stay in their section, ch
 - [x] Unattended runs with `SWAYLIB_FRAMES` and `SWAYLIB_SCREENSHOT`.
 - [x] Tests that draw into a render texture and check pixels, run under Xvfb on CI.
 - [x] DocC documentation with a generated API coverage page.
-- [ ] CI results on Windows and macOS confirmed green.
+- [x] CI results on Windows and macOS confirmed green.
 
 ## Backends
 
