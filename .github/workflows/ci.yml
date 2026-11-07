@@ -78,7 +78,7 @@ jobs:
           echo "helper=$HELPER bundle=$BUNDLE toolchain=$TOOLCHAIN"
           lldb --batch \
             -o "settings set target.env-vars DYLD_FRAMEWORK_PATH=$FRAMEWORKS DYLD_LIBRARY_PATH=$LIBS" \
-            -o run -o 'thread backtrace all' -- "$HELPER" --test-bundle-path "$PWD/$BUNDLE" \
+            -o run -k 'thread backtrace all' -k 'quit' -- "$HELPER" --test-bundle-path "$PWD/$BUNDLE" \
             --testing-library swift-testing 2>&1 | tail -250
       - name: Crash reports
         if: failure()
