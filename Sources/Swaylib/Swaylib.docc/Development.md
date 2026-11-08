@@ -4,8 +4,8 @@ Building, testing and contributing to Swaylib itself.
 
 ## Building
 
-raylib is a git submodule, so clone with `git clone --recurse-submodules`, or run
-`git submodule update --init` in an existing clone. SwiftPM does this itself when Swaylib is used
+raylib and miniaudio are git submodules, so clone with `git clone --recurse-submodules`, or run
+`git submodule update --init` in an existing clone (again after a pull that adds a submodule). SwiftPM does this itself when Swaylib is used
 as a dependency.
 
 On Linux, install the X11 and OpenGL development headers first; <doc:Platforms> has the package
@@ -65,7 +65,7 @@ swift format --in-place --recursive Sources/Swaylib Sources/CRaylibShims Tools T
 swift format lint --strict --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift
 ```
 
-The raylib submodule is never formatted.
+The raylib and miniaudio submodules are never formatted.
 
 ## Generated code
 

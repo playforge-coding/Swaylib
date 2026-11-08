@@ -77,5 +77,6 @@ roadmap in the docs.
 
 ## License
 
-zlib, like raylib. See `LICENSE`; raylib's own license is in its submodule under
-`Sources/CRaylib/raylib/`.
+zlib, like raylib. See `LICENSE`. raylib's own license is in its submodule under
+`Sources/CRaylib/raylib/`, and miniaudio's (public domain or MIT No Attribution) under
+`Sources/CRaylib/miniaudio/`.

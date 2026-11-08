@@ -41,6 +41,8 @@ Where Swaylib is and where it is going. Finished items stay in their section, ch
 - [ ] Report RGFW's `NSApp` release in `RGFW_deinitPlatform` upstream and drop the shim workaround
   once a fixed RGFW ships in raylib.
 - [ ] A person has run the examples on Windows and macOS.
+- [ ] Drop the miniaudio submodule once a raylib release bundles miniaudio 0.11.26 or newer, which
+  opens PulseAudio devices whose native format is s24_32.
 
 ## API coverage
 

@@ -22,8 +22,17 @@ Compile settings in `Package.swift` select raylib's GLFW desktop platform on Lin
 RGFW on macOS, X11 on Linux, and OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header
 `include/CRaylib.h` exposes `raylib.h`, `raymath.h` and `rlgl.h` to Swift as one module.
 
+A second submodule, `Sources/CRaylib/miniaudio/`, holds miniaudio 0.11.26, newer than the
+0.11.25 raylib 6.2 bundles. That one cannot open a PulseAudio device whose native format it does
+not handle, which is common with PipeWire. On Linux and macOS the `raudio.c` wrapper includes the
+newer miniaudio before raylib's audio module, with the same settings, so the include guards skip
+raylib's copy. Windows keeps raylib's copy, because raylib has to prepare `windows.h` before
+miniaudio includes it, and the bug is in the PulseAudio code only.
+
 Updating raylib means moving the submodule to the new tag, regenerating, and fixing whatever
-changed.
+changed. If the new release bundles miniaudio 0.11.26 or newer, also remove the miniaudio
+submodule and go back to the one-line `raudio.c` wrapper. Otherwise Swaylib would keep building
+the older copy.
 
 ## CRaylibShims
 
