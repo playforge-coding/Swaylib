@@ -18,6 +18,10 @@ let package = Package(
         ),
         .default(enabledTraits: []),
     ],
+    dependencies: [
+        // Builds the DocC catalog with `swift package generate-documentation`.
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+    ],
     targets: [
         // raylib's own source, a git submodule at a tagged release under raylib/. The wrapper
         // files at the top level of the target include it, so the submodule itself is never

@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing here writes to the repository.
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-24.04
+    # Keep in step with .swift-version; the first step checks it.
+    container: swift:6.4.2-noble
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Toolchain matches .swift-version
+        run: |
+          expected="$(cat .swift-version)"
+          swift --version 2>&1 | grep -q "Swift version $expected " || {
+            echo "Container has $(swift --version 2>&1 | head -1), .swift-version says $expected"; exit 1; }
+      - name: Install X11, OpenGL and Xvfb
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev \
+            libgles-dev xvfb mesa-utils
+      - name: Lint
+        run: swift format lint --strict --recursive Sources/Swaylib Sources/CRaylibShims Tools Tests Examples Package.swift
+      - name: Generated code is up to date
+        run: swift run swaylib-generate --check
+      - name: Build
+        run: swift build
+      - name: Build with the ANGLE trait
+        run: swift build --traits ANGLE
+      - name: Test
+        run: xvfb-run -a swift test
+      - name: Test the ANGLE trait on Mesa's EGL and GLES
+        # Exercises the OpenGL ES 3 and EGL path. ANGLE itself is not fetched on CI yet.
+        run: xvfb-run -a swift test --traits ANGLE
+      - name: Run the examples unattended
+        run: |
+          mkdir -p screenshots
+          for example in BasicWindow BouncingBall RenderTextures Camera3D; do
+            SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=screenshots/$example.png xvfb-run -a swift run $example
+            test -s screenshots/$example.png
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-linux
+          path: screenshots
+      - name: Documentation
+        run: swift package generate-documentation --target Swaylib --warnings-as-errors
+
+  macos:
+    name: macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Install the pinned Swift toolchain
+        # swiftly reads .swift-version.
+        run: |
+          curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
+          installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
+          ~/.swiftly/bin/swiftly init --quiet-shell-followup --assume-yes --skip-install
+          . ~/.swiftly/env.sh
+          swiftly install --use --assume-yes
+          echo "$HOME/.swiftly/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: swift build
+      - name: Run the examples unattended
+        run: |
+          mkdir -p screenshots
+          for example in BasicWindow BouncingBall RenderTextures Camera3D; do
+            SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=screenshots/$example.png swift run $example
+            test -s screenshots/$example.png
+          done
+      - name: Test
+        run: swift test
+      - name: Backtrace of the test crash
+        if: failure()
+        run: |
+          HELPER=$(find ~/Library/Developer/Toolchains -name swiftpm-testing-helper -type f | head -1)
+          BUNDLE=$(find .build -path '*SwaylibTests.xctest/Contents/MacOS/SwaylibTests' -type f | head -1)
+          TOOLCHAIN=$(cd "$(dirname "$HELPER")/../../.." && pwd)
+          FRAMEWORKS="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/Library/Frameworks"
+          PLATFORM_LIBS="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/usr/lib"
+          LIBS="$TOOLCHAIN/lib/swift/macosx/testing:$TOOLCHAIN/lib/swift/macosx:$PLATFORM_LIBS:$PWD/.build/out/Products/Debug"
+          echo "helper=$HELPER bundle=$BUNDLE toolchain=$TOOLCHAIN"
+          lldb --batch \
+            -o "settings set target.env-vars DYLD_FRAMEWORK_PATH=$FRAMEWORKS DYLD_LIBRARY_PATH=$LIBS" \
+            -o run -k 'thread backtrace all' -k 'quit' -- "$HELPER" --test-bundle-path "$PWD/$BUNDLE" \
+            --testing-library swift-testing 2>&1 | tail -250
+      - name: Crash reports
+        if: failure()
+        run: |
+          find ~/Library/Logs/DiagnosticReports -type f | while read -r report; do
+            echo "==== $report"
+            head -c 30000 "$report"
+            echo
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: screenshots-macos
+          path: screenshots
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Read .swift-version
+        id: toolchain
+        shell: pwsh
+        run: '"version=$((Get-Content .swift-version).Trim())" >> $env:GITHUB_OUTPUT'
+      # Pinned to the commit of release v0.5.1.
+      - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f
+        with:
+          swift-version: swift-${{ steps.toolchain.outputs.version }}-release
+          swift-build: ${{ steps.toolchain.outputs.version }}-RELEASE
+      - name: Build
+        run: swift build
+      - name: Test without a window
+        run: swift test
