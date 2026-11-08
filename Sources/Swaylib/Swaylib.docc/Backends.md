@@ -25,18 +25,27 @@ through EGL instead of the platform's native OpenGL API:
 ```
 
 Two libraries are involved. GLFW loads `libEGL` at run time to create the context. raylib's
-`rlgl` calls the `gl*` functions directly on this path, so `libGLESv2` is linked: at build time
-the linker needs a `GLESv2` library (`libgles-dev` on Debian and Ubuntu, or ANGLE's own
-`libGLESv2` on Windows), and at run time the program loads whichever `libGLESv2` it finds first.
-That is how you point it at ANGLE:
+`rlgl` calls the `gl*` functions directly on this path, so `libGLESv2` is linked into the
+program. Pointing it at ANGLE works like this:
 
-- On Windows, put ANGLE's `libEGL.dll` and `libGLESv2.dll` next to the executable.
-- On Linux, the dynamic loader has to find them. Next to the executable is not enough unless the
-  executable has a runpath pointing there. Either link with one
-  (`-Xlinker -rpath -Xlinker <dir>`, or `'$ORIGIN'` for the executable's own directory) or set
-  `LD_LIBRARY_PATH`. Under the trait GLFW asks for `libEGL.so` and `libGLESv2.so`, the names
-  ANGLE ships, rather than Mesa's `libEGL.so.1`; with no ANGLE present those names come from
-  `libegl-dev` and `libgles-dev`, which is how CI runs the trait on Mesa.
+- On Windows, link against ANGLE's `libGLESv2` and put its `libEGL.dll` and `libGLESv2.dll` next
+  to the executable.
+- On Linux, link against ANGLE too, with `-Xlinker -L<dir>` where `<dir>` holds ANGLE's
+  `libEGL.so` and `libGLESv2.so`. The program records the name of the library it was linked
+  against, and ANGLE's is `libGLESv2.so`. Linked against `libgles-dev` instead, it records
+  `libGLESv2.so.2`, which ANGLE does not provide, so it keeps using the system's GL functions even
+  with ANGLE on the library path, and they do not work with ANGLE's context. Then the dynamic
+  loader has to find ANGLE at run time: link with a runpath (`-Xlinker -rpath -Xlinker <dir>`, or
+  `'$ORIGIN'` for the executable's own directory) or set `LD_LIBRARY_PATH`. Next to the executable
+  is not enough without a runpath:
+
+  ```
+  swift build --traits ANGLE -Xlinker -L<dir> -Xlinker -rpath -Xlinker <dir>
+  ```
+
+  Under the trait GLFW asks for `libEGL.so` and `libGLESv2.so`, ANGLE's names, rather than Mesa's
+  `libEGL.so.1`. With no ANGLE present, those names come from `libegl-dev` and `libgles-dev`,
+  which is how CI runs the trait on Mesa.
 - On macOS the trait is not supported yet and the build stops with an error: raylib's RGFW
   platform, which Swaylib uses there, only creates native OpenGL contexts, never EGL ones.
 

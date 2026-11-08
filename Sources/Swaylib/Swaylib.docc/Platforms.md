@@ -4,8 +4,9 @@ What each operating system needs, and what is known to work.
 
 ## Overview
 
-Swaylib builds raylib from source with Swift Package Manager on every platform, with GLFW compiled
-in. No CMake, no system raylib and no system GLFW. The library code has no platform conditions in
+Swaylib builds raylib from source with Swift Package Manager on every platform, with its windowing
+layer compiled in: GLFW on Linux and Windows, RGFW on macOS. No CMake, no system raylib and no
+system GLFW. The library code has no platform conditions in
 its public API; your program should not need any either.
 
 ## Linux
@@ -38,15 +39,17 @@ to run them on a machine that has one. Treat Windows as building but not yet ver
 ## macOS
 
 Needs macOS 15 or newer (for the standard library's `Mutex`) and the Swift toolchain, either
-from Xcode or from swift.org. On macOS raylib
-uses its RGFW platform rather than GLFW: GLFW's Cocoa code is Objective-C without ARC, SwiftPM
-compiles Objective-C with ARC and cannot be told otherwise, and RGFW's macOS backend is plain C
-over the Objective-C runtime. raylib links the AppKit, IOKit, CoreVideo, QuartzCore, OpenGL and
-CoreAudio frameworks.
+from Xcode or from swift.org. On macOS raylib uses its RGFW platform rather than GLFW. GLFW's
+Cocoa code is Objective-C without ARC, and SwiftPM compiles Objective-C with ARC on; turning it off
+takes `unsafeFlags`, which would stop other packages from depending on Swaylib. RGFW's macOS
+backend is plain C over the Objective-C runtime. raylib links the AppKit, IOKit, CoreVideo,
+QuartzCore, OpenGL and CoreAudio frameworks.
 
-RGFW moves the working directory next to the executable (or into the bundle's resources) while
-the window opens, like raylib's own macOS builds do. Load assets after creating the ``Window`` with
-paths relative to the executable, or use absolute paths. Swaylib resolves `SWAYLIB_SCREENSHOT`
+raylib moves the working directory next to the executable (or into the bundle's resources) while
+the window opens. Under `swift run` that is the build directory, such as `.build/debug`, not the
+package root you ran it from, so a relative path like `assets/player.png` that works on Linux and
+Windows is not found on macOS. Copy the assets next to the executable, or build absolute paths,
+for example from a resource bundle with `Bundle.module`. Swaylib resolves `SWAYLIB_SCREENSHOT`
 against the original working directory for you.
 
 RGFW 6.2 also releases `NSApp` when its last window closes, which would crash the program the

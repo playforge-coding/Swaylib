@@ -73,7 +73,10 @@ drawing {
 }
 ```
 
-Paths are relative to the working directory, like raylib. ``Image`` is the CPU-side version: load
+Paths are relative to the working directory, like raylib. On macOS raylib moves the working
+directory next to the executable when the window opens, so there `assets/player.png` has to be
+next to the executable, not in your package; <doc:Platforms#macOS> has the details. ``Image`` is
+the CPU-side version: load
 or generate one, edit it, then make a ``Texture`` from it with ``Texture/init(image:)``.
 
 ## Run unattended

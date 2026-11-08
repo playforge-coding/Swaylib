@@ -10,11 +10,13 @@ parts of the top one.
 ## CRaylib
 
 raylib's own repository is a git submodule at a tagged release under `Sources/CRaylib/raylib/`,
-so its files are never touched and the pinned commit is the version. SwiftPM never compiles the submodule directly. Instead, wrapper files at the top of the
-target (`rcore.c`, `rshapes.c`, and so on) each include one raylib module from `raylib/src/`, and
-`rglfw.c` includes GLFW on Linux and Windows. On macOS raylib uses its RGFW platform instead, which
-is plain C: GLFW's Cocoa code is Objective-C without ARC, and SwiftPM compiles Objective-C with ARC
-on with no way to turn it off.
+so its files are never touched and the pinned commit is the version. SwiftPM never compiles the
+submodule directly. Instead, wrapper files at the top of the target (`rcore.c`, `rshapes.c`, and
+so on) each include one raylib module from `raylib/src/`, and `rglfw.c` includes GLFW on Linux and
+Windows. On macOS raylib uses its RGFW platform instead, which is plain C. GLFW's Cocoa code is
+Objective-C without ARC, and SwiftPM compiles Objective-C with ARC on. The only way to turn it off
+for a target is `unsafeFlags(["-fno-objc-arc"])`, and SwiftPM refuses packages with unsafe flags
+as dependencies, so Swaylib could not be used from other packages.
 
 Compile settings in `Package.swift` select raylib's GLFW desktop platform on Linux and Windows and
 RGFW on macOS, X11 on Linux, and OpenGL ES 3 when the `ANGLE` trait is on. The umbrella header

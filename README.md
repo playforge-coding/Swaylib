@@ -2,11 +2,12 @@
 
 Idiomatic Swift bindings for [raylib](https://www.raylib.com), for Linux, Windows and macOS.
 
-raylib is compiled into your program by Swift Package Manager, GLFW included, so raylib itself
-needs no install. You need a Swift toolchain, plus the X11 and OpenGL headers on Linux, or the
-MSVC build tools and Windows SDK on Windows. Rendering uses the
-system's OpenGL by default, or OpenGL ES through [ANGLE](https://chromium.googlesource.com/angle/angle)
-with the `ANGLE` package trait.
+raylib is compiled into your program by Swift Package Manager, along with its windowing layer
+(GLFW on Linux and Windows, RGFW on macOS), so raylib itself needs no install. You need a Swift
+toolchain, plus the X11 and OpenGL headers on Linux, or the MSVC build tools and Windows SDK on
+Windows. Rendering uses the system's OpenGL by default. On Linux and Windows the `ANGLE` package
+trait switches to OpenGL ES through [ANGLE](https://chromium.googlesource.com/angle/angle); macOS
+does not support it yet.
 
 ```swift
 import Swaylib

@@ -8,10 +8,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Nothing by default; each job asks for what it needs, and only deploy can write to Pages.
+permissions: {}
 
 # One deployment at a time, and never cancel one halfway through.
 concurrency:
@@ -22,6 +20,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     # Keep in step with .swift-version, like the Linux job in ci.yml.
     container: swift:6.4.2-noble
     steps:
@@ -55,7 +55,6 @@ jobs:
           <body><a href="documentation/swaylib/">Swaylib documentation</a></body>
           </html>
           EOF
-      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
@@ -64,6 +63,9 @@ jobs:
     name: Deploy
     needs: build
     runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}documentation/swaylib/
