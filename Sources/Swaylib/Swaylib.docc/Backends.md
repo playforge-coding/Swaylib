@@ -1,6 +1,6 @@
 # Backends
 
-How Swaylib talks to the GPU, and how to pick between native OpenGL and ANGLE.
+How Swaylib talks to the GPU, and how to pick between native OpenGL, ANGLE and Metal.
 
 ## Overview
 
@@ -77,6 +77,21 @@ let shader = try Shader(vertexPath: nil, fragmentPath: "shaders/\(directory)/blu
 compilation condition inside the package that declares it, so enabling `ANGLE` on the Swaylib
 dependency leaves your code compiling as if it were off. Code inside Swaylib, including its
 examples and tests, can use `#if ANGLE`.
+
+## Metal (experimental)
+
+The `Metal` trait replaces raylib's OpenGL layer with `rlmt`, a Metal implementation of the same
+functions from [raylib-backends](https://github.com/raythings/raylib-backends). It only works on
+macOS; elsewhere the trait has no effect and the compiler warns about it. It has not been run on a
+Mac yet, so expect it to be broken:
+
+```
+swift build --traits Metal
+```
+
+Custom shaders do not work under this trait. `rlmt` can only compile GLSL with glslang and
+SPIRV-Cross, which Swaylib does not build, so loading a ``Shader`` throws. Drawing that uses
+raylib's default shader is not affected.
 
 ## Why not a system raylib
 

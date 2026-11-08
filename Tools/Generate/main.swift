@@ -18,6 +18,8 @@ let outputs: [(path: String, content: () throws -> String)] = [
     ("Sources/Swaylib/Generated/Enums.swift", { emitEnums(api) }),
     ("Sources/Swaylib/Generated/Colors.swift", { try emitColors(api) }),
     ("Sources/Swaylib/Swaylib.docc/APICoverage.md", { try emitCoverage(api, wrapped: wrapped, version: version) }),
+    ("Sources/CRaylib/metal/rcore.c", { try emitMetalCore(root: packageRoot) }),
+    ("Sources/CRaylib/metal/rcore_desktop_rgfw.c", { try emitMetalPlatform(root: packageRoot) }),
 ]
 
 let check = CommandLine.arguments.contains("--check")

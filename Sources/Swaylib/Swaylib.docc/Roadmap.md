@@ -31,6 +31,10 @@ Where Swaylib is and where it is going. Finished items stay in their section, ch
 - [ ] ANGLE as the default on macOS.
 - [ ] Render tests on ANGLE's SwiftShader backend, so Windows CI can run them too.
 - [ ] raylib's software renderer (`rlsw`) and `PLATFORM_MEMORY` as a headless trait for CI.
+- [ ] Experimental `Metal` trait on macOS, using `rlmt` from raylib-backends. The integration is
+  written and checked on Linux, but has not been built or run on a Mac.
+- [ ] Custom shaders under the `Metal` trait, which need glslang and SPIRV-Cross built by SwiftPM.
+- [ ] If the `Metal` trait stays, move to a trimmed `swift-gamedev` fork of raylib-backends.
 - [ ] Zink: documented, tested setup on Mesa.
 
 ## Platforms

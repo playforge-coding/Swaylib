@@ -16,6 +16,10 @@ let package = Package(
             name: "ANGLE",
             description: "Build raylib for OpenGL ES 3 on an EGL context, so it runs on ANGLE's libEGL and libGLESv2."
         ),
+        .trait(
+            name: "Metal",
+            description: "Experimental, macOS only: replace raylib's OpenGL layer with the rlmt Metal backend."
+        ),
         .default(enabledTraits: []),
     ],
     dependencies: [
@@ -28,9 +32,11 @@ let package = Package(
         // compiled directly.
         .target(
             name: "CRaylib",
+            dependencies: [.target(name: "CRlmt", condition: .when(platforms: [.macOS], traits: ["Metal"]))],
             // miniaudio is a second submodule, a newer release than raylib bundles; raudio.c
-            // includes it on Linux and macOS (see the comment there).
-            exclude: ["raylib", "miniaudio"],
+            // includes it on Linux and macOS (see the comment there). raylib-backends and metal/
+            // are only used by the Metal trait, through rcore.c and the CRlmt target.
+            exclude: ["raylib", "miniaudio", "raylib-backends", "metal"],
             sources: [
                 "rcore.c", "rshapes.c", "rtextures.c", "rtext.c", "rmodels.c", "raudio.c",
                 "rglfw.c",
@@ -45,6 +51,10 @@ let package = Package(
                 .define("PLATFORM_DESKTOP_RGFW", .when(platforms: [.macOS])),
                 // Without any GRAPHICS_API_OPENGL_* define rlgl picks desktop OpenGL 3.3.
                 .define("GRAPHICS_API_OPENGL_ES3", .when(traits: ["ANGLE"])),
+                // Ignored elsewhere rather than an error, because the DocC plugin builds with every
+                // trait enabled.
+                .define("RAYLIB_USE_RLMT", .when(platforms: [.macOS], traits: ["Metal"])),
+                .define("SWAYLIB_METAL_IGNORED", .when(platforms: [.linux, .windows], traits: ["Metal"])),
                 // GLFW on Linux loads libEGL.so.1 and libGLESv2.so.2, the system's (Mesa's) names,
                 // while ANGLE ships libEGL.so and libGLESv2.so. Without these the program would
                 // create a Mesa EGL context and call ANGLE's GL functions on it.
@@ -74,6 +84,16 @@ let package = Package(
                 .linkedFramework("CoreVideo", .when(platforms: [.macOS])),
                 .linkedFramework("QuartzCore", .when(platforms: [.macOS])),
                 .linkedFramework("CoreAudio", .when(platforms: [.macOS])),
+            ]
+        ),
+        // rlmt, the Objective-C++ implementation of rlgl on Metal, kept apart from CRaylib so that
+        // builds without the Metal trait never link it or the C++ runtime it needs.
+        .target(
+            name: "CRlmt",
+            linkerSettings: [
+                .linkedFramework("Metal", .when(platforms: [.macOS])),
+                .linkedFramework("QuartzCore", .when(platforms: [.macOS])),
+                .linkedFramework("AppKit", .when(platforms: [.macOS])),
             ]
         ),
         // C helpers for the few raylib entry points Swift cannot call directly (va_list callbacks).

@@ -7,4 +7,14 @@
 #error "The ANGLE trait is not supported on macOS yet: raylib's RGFW platform does not create an EGL context. See the roadmap."
 #endif
 
+#if defined(SWAYLIB_METAL_IGNORED)
+#warning "The Metal trait only works on macOS and has no effect on this platform."
+#endif
+
+// The Metal trait compiles a generated copy of rcore.c, because the rlgl include and the frame
+// boundaries cannot be changed from outside it. See Tools/Generate/MetalOverlay.swift.
+#if defined(RAYLIB_USE_RLMT)
+#include "metal/rcore.c"
+#else
 #include "raylib/src/rcore.c"
+#endif

@@ -6,3 +6,7 @@
 	path = Sources/CRaylib/miniaudio
 	url = https://github.com/mackron/miniaudio.git
 	shallow = true
+[submodule "Sources/CRaylib/raylib-backends"]
+	path = Sources/CRaylib/raylib-backends
+	url = https://github.com/raythings/raylib-backends.git
+	shallow = true
