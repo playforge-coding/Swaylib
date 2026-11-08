@@ -7,8 +7,8 @@ import CRaylib
 public func drawing(_ body: () throws -> Void) rethrows {
     BeginDrawing()
     defer {
+        Headless.frameEnding()
         EndDrawing()
-        Headless.frameEnded()
     }
     try body()
 }
@@ -30,11 +30,30 @@ public func mode3D(_ camera: Camera3D, _ body: () throws -> Void) rethrows {
 }
 
 /// Draws `body` into a render texture instead of the screen.
+///
+/// Calls can nest: when an inner `textureMode` ends, drawing goes back to the outer render
+/// texture rather than the screen. raylib resets the camera when it switches targets, so a
+/// ``mode2D(_:_:)`` or ``mode3D(_:_:)`` around the inner call does not carry over to what the outer
+/// body draws after it; open the camera mode inside the outer `textureMode` again if you need it.
 @MainActor
 public func textureMode(_ target: borrowing RenderTexture, _ body: () throws -> Void) rethrows {
     BeginTextureMode(target.raw)
-    defer { EndTextureMode() }
+    TextureModeStack.targets.append(target.raw)
+    defer {
+        EndTextureMode()
+        TextureModeStack.targets.removeLast()
+        if let outer = TextureModeStack.targets.last {
+            BeginTextureMode(outer)
+        }
+    }
     try body()
+}
+
+/// The render textures of the ``textureMode(_:_:)`` calls currently open, innermost last. raylib
+/// itself only knows one target at a time.
+@MainActor
+enum TextureModeStack {
+    static var targets: [RenderTexture2D] = []
 }
 
 /// Draws `body` with a custom shader.

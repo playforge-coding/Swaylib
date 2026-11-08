@@ -11,6 +11,9 @@ public enum Log {
     private nonisolated static let handler = Mutex<Handler?>(nil)
 
     /// Redirects raylib's log to `handler`, or back to stdout when nil.
+    ///
+    /// Lines arrive whole, however long. A ``TraceLogLevel/fatal`` message still ends the process
+    /// once the handler returns, exactly as it does without a handler.
     public static func setHandler(_ handler: Handler?) {
         Self.handler.withLock { $0 = handler }
         swaylibSetLogHandler(handler == nil ? nil : forwardToHandler)
@@ -22,6 +25,9 @@ public enum Log {
     }
 
     /// Writes a line to raylib's log, through the handler if one is set.
+    ///
+    /// Logging at ``TraceLogLevel/fatal`` ends the process with a failure status after the line is
+    /// written, whether or not a handler is set, as raylib's own fatal errors do.
     public static func log(_ level: TraceLogLevel, _ message: String) {
         swaylibLog(level.rawValue, message)
     }

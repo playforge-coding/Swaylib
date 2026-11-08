@@ -20,6 +20,9 @@ public enum SwaylibError: Error, Equatable, Sendable {
 
     /// The window or its OpenGL context could not be created. raylib logs the reason.
     case windowFailed
+    /// A ``Window`` is already open. raylib has a single global window, so a second one would take
+    /// it over and the first one's `deinit` would close it.
+    case windowAlreadyOpen
     /// A resource could not be loaded from `source` (a file path, or a short description).
     case loadFailed(Resource, source: String)
     /// A file could not be written.

@@ -100,8 +100,11 @@ public struct Music: ~Copyable {
         set { raw.looping = newValue }
     }
 
-    /// Starts playing from the beginning.
+    /// Starts playing from the beginning, even if it was playing or paused. Use ``resume()`` to
+    /// continue from where it paused.
     public func play() {
+        // PlayMusicStream alone continues the decoder from its current position.
+        StopMusicStream(raw)
         PlayMusicStream(raw)
     }
 

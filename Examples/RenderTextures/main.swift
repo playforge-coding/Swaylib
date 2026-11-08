@@ -15,7 +15,8 @@ let generated = try Texture(image: checkers)
 var angle: Float = 0
 
 while !window.shouldClose {
-    angle += 90 * Time.frame
+    // A quarter turn per second, kept within one full turn so it never loses float precision.
+    angle = (angle + 90 * Time.frame).truncatingRemainder(dividingBy: 360)
 
     textureMode(canvas) {
         Draw.clearBackground(.darkGray)

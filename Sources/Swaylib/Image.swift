@@ -35,8 +35,11 @@ public struct Image: ~Copyable {
         raw = GenImageGradientLinear(Int32(width), Int32(height), Int32(direction), start.raw, end.raw)
     }
 
-    /// Generates a checkerboard.
+    /// Generates a checkerboard of `checksX` by `checksY` pixel squares.
+    ///
+    /// - Precondition: `checksX` and `checksY` are greater than zero; raylib divides by them.
     public init(width: Int, height: Int, checksX: Int, checksY: Int, _ first: Color, _ second: Color) {
+        precondition(checksX > 0 && checksY > 0, "checker sizes must be greater than zero")
         raw = GenImageChecked(Int32(width), Int32(height), Int32(checksX), Int32(checksY), first.raw, second.raw)
     }
 
@@ -59,9 +62,9 @@ public struct Image: ~Copyable {
         Int(raw.height)
     }
 
-    /// The pixel format.
-    public var format: PixelFormat {
-        PixelFormat(rawValue: raw.format) ?? .uncompressedR8G8B8A8
+    /// The pixel format, or nil for a format value raylib defines but ``PixelFormat`` does not know.
+    public var format: PixelFormat? {
+        PixelFormat(rawValue: raw.format)
     }
 
     /// The number of mipmap levels, 1 for none.

@@ -36,6 +36,7 @@ public struct Font: ~Copyable {
 
     deinit {
         if owned {
+            flushPendingDraws()
             UnloadFont(raw)
         }
     }

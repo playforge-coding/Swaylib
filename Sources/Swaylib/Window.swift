@@ -15,6 +15,7 @@ public struct Window: ~Copyable {
     }
 
     /// The frame rate raylib waits for at the end of each ``drawing(_:)`` block; 0 means no limit.
+    /// Every new window starts at 0, even if an earlier one set a limit.
     public var targetFPS: Int = 0 {
         didSet { SetTargetFPS(Int32(targetFPS)) }
     }
@@ -29,8 +30,11 @@ public struct Window: ~Copyable {
     ///     ``ConfigFlags/windowResizable`` or ``ConfigFlags/vsyncHint``. raylib keeps them for the
     ///     rest of the process, so a later window inherits the flags of an earlier one; use
     ///     ``clearState(_:)`` after opening to turn one off.
-    /// - Throws: ``SwaylibError/windowFailed`` if the window or context could not be created.
+    /// - Throws: ``SwaylibError/windowAlreadyOpen`` if another `Window` is still open, without
+    ///   touching it, or ``SwaylibError/windowFailed`` if the window or context could not be
+    ///   created.
     public init(width: Int, height: Int, title: String, flags: ConfigFlags = []) throws(SwaylibError) {
+        guard !IsWindowReady() else { throw .windowAlreadyOpen }
         if !flags.isEmpty {
             SetConfigFlags(flags.rawValue)
         }
@@ -41,6 +45,8 @@ public struct Window: ~Copyable {
         guard IsWindowReady() else { throw .windowFailed }
         swaylibPlatformWindowOpened()
         self.title = title
+        // raylib keeps the frame target across CloseWindow and InitWindow; match the property.
+        SetTargetFPS(0)
         // raylib resets these when it opens a window; keep what the program chose.
         SetExitKey(Keyboard.storedExitKey.rawValue)
         SetMouseCursor(Mouse.storedCursor.rawValue)
@@ -307,10 +313,13 @@ enum Headless {
         return framesDrawn >= frameBudget
     }
 
-    /// Called after each frame. raylib's own F12 screenshot reads the screen at this point too.
-    static func frameEnded() {
+    /// Called at the end of each frame, before `EndDrawing` swaps buffers: after the swap the back
+    /// buffer no longer reliably holds the frame. The pending draw batch is flushed first so the
+    /// screenshot has everything in it.
+    static func frameEnding() {
         framesDrawn += 1
         if framesDrawn == frameBudget, let screenshotPath {
+            rlDrawRenderBatchActive()
             TakeScreenshot(screenshotPath)
         }
     }

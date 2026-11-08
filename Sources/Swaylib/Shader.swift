@@ -1,27 +1,62 @@
 import CRaylib
 
+/// The shading language a backend compiles.
+public enum ShaderLanguage: Sendable {
+    /// GLSL 330, for desktop OpenGL 3.3 (the default backend).
+    case glsl330
+    /// GLSL ES 300, for OpenGL ES 3 (the `ANGLE` trait).
+    case glslES300
+}
+
 /// A GPU shader program. Unloaded when it goes out of scope.
 ///
 /// Shader source differs between backends: desktop OpenGL takes GLSL 330, ANGLE takes GLSL ES 300.
-/// Pass nil for either stage to use raylib's default.
+/// Pick the source with ``language``. Pass nil for either stage to use raylib's default.
 @MainActor
 public struct Shader: ~Copyable {
     var raw: CRaylib.Shader
 
+    /// The shading language of the backend Swaylib was built with.
+    ///
+    /// Use this rather than `#if ANGLE` in your own code: package traits only define compilation
+    /// conditions inside the package that declares them, so Swaylib's `ANGLE` trait is not visible
+    /// as a condition in a package that depends on it.
+    public nonisolated static var language: ShaderLanguage {
+        #if ANGLE
+        .glslES300
+        #else
+        .glsl330
+        #endif
+    }
+
     /// Loads and compiles a shader from source files.
+    ///
+    /// - Throws: ``SwaylibError/loadFailed(_:source:)`` if a file cannot be read or the program does
+    ///   not compile or link. (raylib itself treats an unreadable file as a missing stage and falls
+    ///   back to its default shader.)
     public init(vertexPath: String?, fragmentPath: String?) throws(SwaylibError) {
         let raw = LoadShader(vertexPath, fragmentPath)
-        guard IsShaderValid(raw) else {
+        guard Self.isValid(raw, stagesSupplied: vertexPath != nil || fragmentPath != nil) else {
             throw .loadFailed(.shader, source: [vertexPath, fragmentPath].compactMap { $0 }.joined(separator: ", "))
         }
         self.raw = raw
     }
 
     /// Compiles a shader from source code.
+    ///
+    /// - Throws: ``SwaylibError/loadFailed(_:source:)`` if the program does not compile or link.
     public init(vertexCode: String?, fragmentCode: String?) throws(SwaylibError) {
         let raw = LoadShaderFromMemory(vertexCode, fragmentCode)
-        guard IsShaderValid(raw) else { throw .loadFailed(.shader, source: "shader code") }
+        guard Self.isValid(raw, stagesSupplied: vertexCode != nil || fragmentCode != nil) else {
+            throw .loadFailed(.shader, source: "shader code")
+        }
         self.raw = raw
+    }
+
+    /// raylib hands back its default program when it ends up with no custom stage at all. That is
+    /// fine when the caller asked for no stages, and a failure when it supplied one.
+    private static func isValid(_ raw: CRaylib.Shader, stagesSupplied: Bool) -> Bool {
+        IsShaderValid(raw) && !(stagesSupplied && raw.id == rlGetShaderIdDefault())
     }
 
     deinit {

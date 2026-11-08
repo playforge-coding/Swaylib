@@ -53,10 +53,15 @@ public enum Keyboard {
     }
 
     /// The next character typed this frame, or nil when the queue is empty. Call repeatedly to drain it.
+    /// Codepoints that are not valid Unicode scalars are skipped, so the rest of the queue still arrives.
     public static func nextTypedCharacter() -> Character? {
-        let codepoint = GetCharPressed()
-        guard codepoint != 0, let scalar = Unicode.Scalar(UInt32(codepoint)) else { return nil }
-        return Character(scalar)
+        while true {
+            let codepoint = GetCharPressed()
+            guard codepoint != 0 else { return nil }
+            if codepoint > 0, let scalar = Unicode.Scalar(UInt32(codepoint)) {
+                return Character(scalar)
+            }
+        }
     }
 }
 
@@ -114,12 +119,15 @@ public enum Mouse {
         SetMouseScale(scale.x, scale.y)
     }
 
-    /// The pointer shape. Opening a ``Window`` applies the current value.
+    /// The pointer shape. It can be set before a ``Window`` exists; opening one applies the current value.
     public static var cursor: MouseCursor {
         get { storedCursor }
         set {
             storedCursor = newValue
-            SetMouseCursor(newValue.rawValue)
+            // raylib's platforms need a window for this; RGFW on macOS asserts without one.
+            if IsWindowReady() {
+                SetMouseCursor(newValue.rawValue)
+            }
         }
     }
 

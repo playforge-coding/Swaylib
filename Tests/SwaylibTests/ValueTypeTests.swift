@@ -13,8 +13,36 @@ struct ValueTypeTests {
         #expect(MemoryLayout<Swaylib.Rectangle>.size == MemoryLayout<CRaylib.Rectangle>.size)
         #expect(MemoryLayout<Swaylib.Color>.size == MemoryLayout<CRaylib.Color>.size)
         #expect(MemoryLayout<Swaylib.Camera2D>.size == MemoryLayout<CRaylib.Camera2D>.size)
+        #expect(MemoryLayout<Swaylib.Quaternion>.size == MemoryLayout<CRaylib.Quaternion>.size)
         #expect(MemoryLayout<Swaylib.Vector2>.alignment == MemoryLayout<CRaylib.Vector2>.alignment)
         #expect(MemoryLayout<Swaylib.Matrix>.alignment == MemoryLayout<CRaylib.Matrix>.alignment)
+    }
+
+    @Test("Matrix fields sit where raylib's do")
+    func matrixOffsets() {
+        // Size and alignment alone would not catch two swapped fields.
+        let swift: [PartialKeyPath<Swaylib.Matrix>] = [
+            \.m0, \.m1, \.m2, \.m3, \.m4, \.m5, \.m6, \.m7, \.m8, \.m9, \.m10, \.m11, \.m12, \.m13, \.m14, \.m15,
+        ]
+        let c: [PartialKeyPath<CRaylib.Matrix>] = [
+            \.m0, \.m1, \.m2, \.m3, \.m4, \.m5, \.m6, \.m7, \.m8, \.m9, \.m10, \.m11, \.m12, \.m13, \.m14, \.m15,
+        ]
+        let swiftOffsets = swift.map { MemoryLayout<Swaylib.Matrix>.offset(of: $0) }
+        let cOffsets = c.map { MemoryLayout<CRaylib.Matrix>.offset(of: $0) }
+        #expect(swiftOffsets == cOffsets)
+    }
+
+    @Test("Shader language matches the backend raylib was built for")
+    func shaderLanguage() {
+        let expected: Swaylib.ShaderLanguage = rlGetVersion() == Int32(RL_OPENGL_ES_30.rawValue) ? .glslES300 : .glsl330
+        #expect(Swaylib.Shader.language == expected)
+    }
+
+    @Test("Vector4 products are component-wise")
+    func vector4() {
+        #expect(Swaylib.Vector4(1, 2, 3, 4) * Swaylib.Vector4(1, 1, 1, 1) == Swaylib.Vector4(1, 2, 3, 4))
+        #expect(Swaylib.Vector4(1, 2, 3, 4) * Swaylib.Vector4(2, 0, 1, 0.5) == Swaylib.Vector4(2, 0, 3, 2))
+        #expect(2 * Swaylib.Vector4(1, 2, 3, 4) == Swaylib.Vector4(2, 4, 6, 8))
     }
 
     @Test("Vector2 arithmetic")
@@ -69,6 +97,28 @@ struct ValueTypeTests {
         #expect(rotated.x.isApproximately(0))
         #expect(rotated.z.isApproximately(-1))
         #expect((quarterTurn * quarterTurn.inverted).w.isApproximately(1))
+    }
+
+    @Test("Quaternion products apply the left rotation first")
+    func quaternionOrder() {
+        // Rotations around different axes do not commute, so this tells the two orders apart.
+        let yaw = Swaylib.Quaternion(axis: .up, radians: .pi / 2)
+        let roll = Swaylib.Quaternion(axis: Swaylib.Vector3(0, 0, 1), radians: .pi / 2)
+        let start = Swaylib.Vector3(1, 0, 0)
+
+        let stepByStep = start.rotated(by: yaw).rotated(by: roll)
+        let combined = start.rotated(by: yaw * roll)
+        #expect(combined.x.isApproximately(stepByStep.x))
+        #expect(combined.y.isApproximately(stepByStep.y))
+        #expect(combined.z.isApproximately(stepByStep.z))
+        let otherOrder = start.rotated(by: roll * yaw)
+        #expect(!otherOrder.y.isApproximately(stepByStep.y) || !otherOrder.z.isApproximately(stepByStep.z))
+
+        // The same order as Matrix's *.
+        let viaMatrices = start.transformed(by: yaw.matrix * roll.matrix)
+        #expect(viaMatrices.x.isApproximately(stepByStep.x))
+        #expect(viaMatrices.y.isApproximately(stepByStep.y))
+        #expect(viaMatrices.z.isApproximately(stepByStep.z))
     }
 
     @Test("Rectangle collisions")

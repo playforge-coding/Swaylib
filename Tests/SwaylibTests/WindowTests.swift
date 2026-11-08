@@ -55,6 +55,27 @@ struct WindowTests {
         #expect(targetFPS == 30)
     }
 
+    @Test("A second window is refused while one is open")
+    func secondWindow() throws {
+        let window = try openWindow()
+        _ = window
+        #expect(throws: SwaylibError.windowAlreadyOpen) {
+            _ = try openWindow()
+        }
+        // The first window is untouched.
+        let width = window.width
+        #expect(width == 320)
+    }
+
+    @Test("The cursor can be set before a window exists")
+    func cursorBeforeWindow() throws {
+        Mouse.cursor = .pointingHand
+        defer { Mouse.cursor = .default }
+        let window = try openWindow()
+        _ = window
+        #expect(Mouse.cursor == .pointingHand)
+    }
+
     @Test("Draws shapes into a render texture and reads them back")
     func renderTexture() throws {
         let window = try openWindow()
@@ -82,6 +103,64 @@ struct WindowTests {
             image.color(atX: 32, y: 16),
         ]
         #expect(pixels == [.red, .green, .blue, .red])
+
+        // Drawing the render texture is the presentation path: it must come out the right way
+        // up too, so draw it into a second one and check that.
+        let presented = try RenderTexture(width: 64, height: 64)
+        textureMode(presented) {
+            Draw.clearBackground(.black)
+            target.draw(at: .zero)
+        }
+        let shown = presented.image()
+        let shownPixels = [shown.color(atX: 16, y: 16), shown.color(atX: 32, y: 48)]
+        #expect(shownPixels == [.green, .blue])
+    }
+
+    @Test("Nested texture modes return to the outer target")
+    func nestedTextureMode() throws {
+        let window = try openWindow()
+        _ = window
+        let outer = try RenderTexture(width: 32, height: 32)
+        let inner = try RenderTexture(width: 32, height: 32)
+        textureMode(outer) {
+            Draw.clearBackground(.red)
+            textureMode(inner) {
+                Draw.clearBackground(.blue)
+            }
+            Draw.rectangle(Rectangle(x: 0, y: 0, width: 16, height: 32), color: .green)
+        }
+        let outerImage = outer.image()
+        let innerImage = inner.image()
+        let pixels = [outerImage.color(atX: 4, y: 4), outerImage.color(atX: 28, y: 4), innerImage.color(atX: 28, y: 4)]
+        #expect(pixels == [.green, .red, .blue])
+    }
+
+    @Test("A texture dropped mid-frame still draws")
+    func textureDroppedMidFrame() throws {
+        let window = try openWindow()
+        _ = window
+        let target = try RenderTexture(width: 16, height: 16)
+        textureMode(target) {
+            Draw.clearBackground(.black)
+            // The texture goes out of scope before the batch holding its draw is submitted.
+            if let texture = try? Texture(image: Image(width: 16, height: 16, color: .lime)) {
+                texture.draw(at: .zero)
+            }
+        }
+        let pixel = target.image().color(atX: 8, y: 8)
+        #expect(pixel == .lime)
+    }
+
+    @Test("A shader file that cannot be read is a load failure")
+    func missingShaderFile() throws {
+        let window = try openWindow()
+        _ = window
+        #expect(throws: SwaylibError.loadFailed(.shader, source: "/nonexistent.fs")) {
+            _ = try Shader(vertexPath: nil, fragmentPath: "/nonexistent.fs")
+        }
+        // Asking for no stages at all is raylib's default shader, and fine.
+        let defaultShader = try Shader(vertexCode: nil, fragmentCode: nil)
+        _ = defaultShader
     }
 
     @Test("Text draws something")
@@ -166,6 +245,10 @@ struct WindowTests {
         defer { Log.setHandler(nil) }
         Log.log(.warning, "hello from the test")
         #expect(messages.lines.contains { $0.level == .warning && $0.message == "hello from the test" })
+        // Longer than the shim's stack buffer, which used to truncate it.
+        let long = String(repeating: "abcdefghij", count: 300)
+        Log.log(.warning, long)
+        #expect(messages.lines.contains { $0.message == long })
         #expect(throws: SwaylibError.loadFailed(.texture, source: "/nonexistent.png")) {
             let window = try openWindow()
             _ = window

@@ -24,6 +24,7 @@ public struct Texture: ~Copyable {
     }
 
     deinit {
+        flushPendingDraws()
         UnloadTexture(raw)
     }
 
@@ -57,9 +58,9 @@ public struct Texture: ~Copyable {
         Int(raw.mipmaps)
     }
 
-    /// The pixel format.
-    public var format: PixelFormat {
-        PixelFormat(rawValue: raw.format) ?? .uncompressedR8G8B8A8
+    /// The pixel format, or nil for a format value raylib defines but ``PixelFormat`` does not know.
+    public var format: PixelFormat? {
+        PixelFormat(rawValue: raw.format)
     }
 
     /// How the texture is sampled when scaled.
@@ -85,7 +86,8 @@ public struct Texture: ~Copyable {
     /// - Precondition: ``format`` is ``PixelFormat/uncompressedR8G8B8A8`` and `pixels.count` is
     ///   `width * height`.
     public func update(pixels: [Color]) {
-        precondition(format == .uncompressedR8G8B8A8, "update(pixels:) needs an RGBA texture")
+        precondition(
+            raw.format == PixelFormat.uncompressedR8G8B8A8.rawValue, "update(pixels:) needs an RGBA texture")
         precondition(pixels.count == width * height, "pixels must cover the whole texture")
         pixels.withUnsafeBytes { UpdateTexture(raw, $0.baseAddress) }
     }
@@ -120,6 +122,17 @@ public struct Texture: ~Copyable {
     }
 }
 
+/// Submits raylib's pending draw batch. raylib batches draws and only sends them to the GPU later
+/// (at the end of a frame or a mode), still referring to textures by id. A texture that goes out of
+/// scope inside ``drawing(_:)`` has to wait for its draws before it is deleted, or the frame shows
+/// the wrong texture or none. Not actor isolated because `deinit` is not; like the unload calls it
+/// sits next to, it runs wherever the owning resource is released, which is the main actor.
+func flushPendingDraws() {
+    if IsWindowReady() {
+        rlDrawRenderBatchActive()
+    }
+}
+
 /// A texture you can draw into with ``textureMode(_:_:)``, for off-screen rendering.
 ///
 /// OpenGL framebuffers are stored upside down. The `draw` methods here flip the texture so it
@@ -136,6 +149,7 @@ public struct RenderTexture: ~Copyable {
     }
 
     deinit {
+        flushPendingDraws()
         UnloadRenderTexture(raw)
     }
 
