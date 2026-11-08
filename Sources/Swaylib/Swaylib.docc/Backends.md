@@ -45,10 +45,13 @@ be overridden with `ANGLE_DEFAULT_PLATFORM` (`vulkan`, `gl`, `d3d11`, `swiftshad
 renderer, SwiftShader, only works with a build that includes SwiftShader's window system support
 for the platform.
 
-Swaylib has been run on prebuilt ANGLE on Linux with its OpenGL and Vulkan backends. CI runs the
-trait against Mesa's EGL and GLES, not ANGLE itself. Swaylib does not yet fetch ANGLE binaries for
-you, and choosing the ANGLE platform from Swift is still on the <doc:Roadmap>. Until then, treat
-it as experimental.
+Prebuilt ANGLE for Linux, Windows and macOS comes from
+[swift-gamedev/angle-prebuilt](https://github.com/swift-gamedev/angle-prebuilt). Each release has a
+`SHA256SUMS` file to check the archives against, and its Linux SwiftShader can draw to X11
+windows. Swaylib has been run on those binaries on Linux with ANGLE's OpenGL, Vulkan and
+SwiftShader backends. CI runs the trait against Mesa's EGL and GLES, not ANGLE itself. Swaylib
+does not yet fetch ANGLE binaries for you, and choosing the ANGLE platform from Swift is still on
+the <doc:Roadmap>. Until then, treat it as experimental.
 
 ### Shaders
 

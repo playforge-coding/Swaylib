@@ -32,18 +32,29 @@ $env:SWAYLIB_FRAMES = "20"; $env:SWAYLIB_SCREENSHOT = "out.png"; swift run Basic
 
 ### Testing on ANGLE
 
-CI tests the `ANGLE` trait on Mesa's EGL and GLES. To test on ANGLE itself on Linux, put a
-prebuilt ANGLE's `libEGL.so` and `libGLESv2.so` in a directory and link the build against it with
-a runpath, so the test binary finds them:
+CI tests the `ANGLE` trait on Mesa's EGL and GLES. To test on ANGLE itself on Linux, download a
+release from [swift-gamedev/angle-prebuilt](https://github.com/swift-gamedev/angle-prebuilt) and
+check it against the release's `SHA256SUMS`:
+
+```
+gh release download <tag> -R swift-gamedev/angle-prebuilt -p 'angle-*-linux-x64.tar.gz' -p SHA256SUMS
+sha256sum --check --ignore-missing SHA256SUMS
+tar xzf angle-*-linux-x64.tar.gz
+```
+
+The libraries are in `angle/out/Release`. Copy them to a directory of your choice (the commands
+below use `/opt/angle/lib`) and link the build against it with a runpath, so the test binary finds
+them:
 
 ```
 swift test --traits ANGLE -Xlinker -L/opt/angle/lib -Xlinker -rpath -Xlinker /opt/angle/lib
 ANGLE_DEFAULT_PLATFORM=vulkan swift test --traits ANGLE -Xlinker -L/opt/angle/lib -Xlinker -rpath -Xlinker /opt/angle/lib
+ANGLE_DEFAULT_PLATFORM=swiftshader swift test --traits ANGLE -Xlinker -L/opt/angle/lib -Xlinker -rpath -Xlinker /opt/angle/lib
 ```
 
 The first runs on ANGLE's default backend for the platform (OpenGL on Linux), the second on
-Vulkan. raylib logs the renderer when the window opens; it starts with `ANGLE (` when ANGLE is in
-use.
+Vulkan, and the third on SwiftShader, ANGLE's software renderer, which needs no GPU. raylib logs
+the renderer when the window opens; it starts with `ANGLE (` when ANGLE is in use.
 
 ## Formatting and linting
 

@@ -19,12 +19,12 @@ Where Swaylib is and where it is going. Finished items stay in their section, ch
 
 - [x] `ANGLE` trait on Linux and Windows: raylib built for OpenGL ES 3 on an EGL context, tested on
   CI against Mesa's EGL and GLES.
-- [x] All tests pass on prebuilt ANGLE on Linux, on its OpenGL and Vulkan backends.
+- [x] All tests pass on prebuilt ANGLE on Linux, on its OpenGL, Vulkan and SwiftShader backends.
 - [ ] `ANGLE` trait on macOS. raylib's RGFW platform only creates native OpenGL contexts, so this
   needs an EGL path in RGFW's raylib platform (upstream) before the build stops refusing it.
-- [ ] ANGLE binaries from a Swaylib fork of
-  [angle-prebuilt](https://github.com/dsafdsaf132/angle-prebuilt), with versioned releases,
-  checksums, and SwiftShader built with its X11 window support.
+- [x] ANGLE binaries from a Swaylib fork,
+  [swift-gamedev/angle-prebuilt](https://github.com/swift-gamedev/angle-prebuilt), with dated
+  releases, checksums, and SwiftShader built with its X11 window support.
 - [ ] Script that fetches those checksummed ANGLE libraries for each platform.
 - [ ] CI that runs the tests on ANGLE itself, not only on Mesa's EGL.
 - [ ] Choosing ANGLE's platform (Vulkan, D3D11, Metal) from Swift through GLFW's hint.
