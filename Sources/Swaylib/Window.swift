@@ -53,6 +53,7 @@ public struct Window: ~Copyable {
     }
 
     deinit {
+        swaylibPlatformWindowClosing()
         CloseWindow()
         swaylibPlatformWindowClosed()
     }

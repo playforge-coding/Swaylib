@@ -13,6 +13,10 @@
 #include "../CRaylib/raylib/src/external/RGFW/RGFW.h"
 #endif
 
+#if defined(SWAYLIB_ANGLE_X11)
+#include <dlfcn.h>
+#endif
+
 // Atomic because raylib can log from its audio thread while the main thread swaps handlers.
 static _Atomic(SwaylibLogHandler) currentHandler = NULL;
 
@@ -76,5 +80,27 @@ void swaylibPlatformWindowClosed(void)
 {
 #if defined(__APPLE__)
     RGFW_setRootWindow(NULL);
+#endif
+}
+
+// GLFW has already loaded ANGLE's libEGL (see _GLFW_EGL_LIBRARY in Package.swift), so this only
+// looks it up. The context stays current: EGL defers the teardown until GLFW releases it while
+// destroying the window, which is still before it closes the X display, and raylib's GL cleanup in
+// CloseWindow keeps a working context until then.
+void swaylibPlatformWindowClosing(void)
+{
+#if defined(SWAYLIB_ANGLE_X11)
+    void *egl = dlopen("libEGL.so", RTLD_NOW | RTLD_NOLOAD);
+    if (egl == NULL) return;
+    typedef void *(*GetCurrentDisplay)(void);
+    typedef unsigned int (*Terminate)(void *display);
+    GetCurrentDisplay getCurrentDisplay = (GetCurrentDisplay)dlsym(egl, "eglGetCurrentDisplay");
+    Terminate terminate = (Terminate)dlsym(egl, "eglTerminate");
+    if (getCurrentDisplay != NULL && terminate != NULL)
+    {
+        void *display = getCurrentDisplay();
+        if (display != NULL) terminate(display);
+    }
+    dlclose(egl);
 #endif
 }

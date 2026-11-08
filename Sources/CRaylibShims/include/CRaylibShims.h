@@ -25,6 +25,12 @@ void swaylibLog(int logLevel, const char *message);
 void swaylibPlatformWindowOpened(void);
 void swaylibPlatformWindowClosed(void);
 
+// Call right before CloseWindow. With the ANGLE trait on Linux it terminates the EGL display while
+// the X11 connection is still open: GLFW closes the X display first and terminates EGL after, and
+// ANGLE's GLX renderer then crashes tearing down against the closed display. GLFW's own
+// eglTerminate afterwards is a no-op. No-op in every other configuration.
+void swaylibPlatformWindowClosing(void);
+
 #ifdef __cplusplus
 }
 #endif

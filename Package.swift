@@ -75,7 +75,11 @@ let package = Package(
         // C helpers for the few raylib entry points Swift cannot call directly (va_list callbacks).
         .target(
             name: "CRaylibShims",
-            dependencies: ["CRaylib"]
+            dependencies: ["CRaylib"],
+            cSettings: [
+                // The ANGLE window teardown workaround in CRaylibShims.c (GLFW on X11 only).
+                .define("SWAYLIB_ANGLE_X11", .when(platforms: [.linux], traits: ["ANGLE"]))
+            ]
         ),
         .target(
             name: "Swaylib",
