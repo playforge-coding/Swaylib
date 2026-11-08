@@ -23,7 +23,7 @@ Non-goals (for now): mobile, the web (Emscripten), and replacing raylib's C code
 - `Tools/Generate/`: the `swaylib-generate` executable and `wrapped.txt`, the list of raylib functions that have a Swift counterpart. It reads `raylib_api.json` from the submodule (`tools/rlparser/output/`), so the generated code always matches the pinned release.
 - `Examples/`: ports of raylib's examples, one executable target each (`BasicWindow`, `BouncingBall`, `RenderTextures`, `Camera3D`). Each is also a smoke test on CI.
 - `Tests/SwaylibTests/`: Swift Testing suites.
-- `.github/workflows/ci.yml`: Linux (lint, generator check, build, ANGLE build, tests under Xvfb, examples, docs), macOS (build, tests, examples) and Windows (build, tests without a window).
+- `.github/workflows/ci.yml`: Linux (lint, generator check, build, ANGLE build, tests under Xvfb, examples, docs), macOS (build, tests, examples) and Windows (build, tests without a window). `.github/workflows/docs.yml` publishes the DocC catalog to GitHub Pages (https://swift-gamedev.github.io/Swaylib/) on every push to `main`, built with `--transform-for-static-hosting --hosting-base-path Swaylib`, with the site root replaced by a redirect to `documentation/swaylib/`.
 
 The generator reads `raylib_api.json` and emits the mechanical parts: enums and option sets (`Generated/Enums.swift`), the named colors (`Generated/Colors.swift`), and the API Coverage article (`Swaylib.docc/APICoverage.md`), which lists every raylib function with the Swift symbol from `wrapped.txt`. Generated output is committed. `swift run swaylib-generate --check` fails when it is stale, and CI runs that.
 

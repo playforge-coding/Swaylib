@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: swift:6.4-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
       - name: Install X11, OpenGL and Xvfb
@@ -37,7 +37,7 @@ jobs:
             SWAYLIB_FRAMES=20 SWAYLIB_SCREENSHOT=screenshots/$example.png xvfb-run -a swift run $example
             test -s screenshots/$example.png
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: screenshots-linux
           path: screenshots
@@ -48,7 +48,7 @@ jobs:
     name: macOS
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
       - name: Install the pinned Swift toolchain
@@ -92,7 +92,7 @@ jobs:
             head -c 30000 "$report"
             echo
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: screenshots-macos
@@ -102,7 +102,7 @@ jobs:
     name: Windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
       - uses: compnerd/gha-setup-swift@main

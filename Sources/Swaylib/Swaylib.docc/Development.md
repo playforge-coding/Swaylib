@@ -54,6 +54,12 @@ CI runs that command, so a broken symbol link fails the build. To browse them lo
 swift package --disable-sandbox preview-documentation --target Swaylib
 ```
 
+Every push to `main` publishes the docs to
+[swift-gamedev.github.io/Swaylib](https://swift-gamedev.github.io/Swaylib/) through the Docs
+workflow (`.github/workflows/docs.yml`). It builds them for static hosting under the `/Swaylib/`
+base path and replaces the site's root page with a redirect to the landing page. It can also be
+run by hand from the Actions tab.
+
 ## Adding raylib API
 
 1. Write the Swift wrapper next to the related code in `Sources/Swaylib/`, with a doc comment.
