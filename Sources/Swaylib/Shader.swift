@@ -12,9 +12,18 @@ public enum ShaderLanguage: Sendable {
 ///
 /// Shader source differs between backends: desktop OpenGL takes GLSL 330, ANGLE takes GLSL ES 300.
 /// Pick the source with ``language``. Pass nil for either stage to use raylib's default.
+///
+/// Uniform setters take effect at once, but raylib batches draws and submits them later, so every
+/// draw it has not submitted yet uses the last value set. Set a uniform before the draws that use
+/// it; to draw with different values in one frame, give each value its own ``shaderMode(_:_:)``
+/// call, since ending one submits the draws made in it.
 @MainActor
 public struct Shader: ~Copyable {
     var raw: CRaylib.Shader
+    private let context = GraphicsContext.generation
+    /// False when raylib handed back its own default program (no stages asked for), whose locations
+    /// array it owns.
+    private let ownsProgram: Bool
 
     /// The shading language of the backend Swaylib was built with.
     ///
@@ -32,35 +41,47 @@ public struct Shader: ~Copyable {
     /// Loads and compiles a shader from source files.
     ///
     /// - Throws: ``SwaylibError/loadFailed(_:source:)`` if a file cannot be read or the program does
-    ///   not compile or link. (raylib itself treats an unreadable file as a missing stage and falls
-    ///   back to its default shader.)
+    ///   not compile or link. (raylib itself treats an unreadable file as a missing stage and uses
+    ///   its default for it.)
     public init(vertexPath: String?, fragmentPath: String?) throws(SwaylibError) {
-        let raw = LoadShader(vertexPath, fragmentPath)
-        guard Self.isValid(raw, stagesSupplied: vertexPath != nil || fragmentPath != nil) else {
-            throw .loadFailed(.shader, source: [vertexPath, fragmentPath].compactMap { $0 }.joined(separator: ", "))
-        }
-        self.raw = raw
+        try self.init(
+            vertexCode: Self.readSource(vertexPath), fragmentCode: Self.readSource(fragmentPath),
+            source: [vertexPath, fragmentPath].compactMap { $0 }.joined(separator: ", "))
     }
 
     /// Compiles a shader from source code.
     ///
     /// - Throws: ``SwaylibError/loadFailed(_:source:)`` if the program does not compile or link.
     public init(vertexCode: String?, fragmentCode: String?) throws(SwaylibError) {
-        let raw = LoadShaderFromMemory(vertexCode, fragmentCode)
-        guard Self.isValid(raw, stagesSupplied: vertexCode != nil || fragmentCode != nil) else {
-            throw .loadFailed(.shader, source: "shader code")
-        }
-        self.raw = raw
+        try self.init(vertexCode: vertexCode, fragmentCode: fragmentCode, source: "shader code")
     }
 
-    /// raylib hands back its default program when it ends up with no custom stage at all. That is
-    /// fine when the caller asked for no stages, and a failure when it supplied one.
-    private static func isValid(_ raw: CRaylib.Shader, stagesSupplied: Bool) -> Bool {
-        IsShaderValid(raw) && !(stagesSupplied && raw.id == rlGetShaderIdDefault())
+    private init(vertexCode: String?, fragmentCode: String?, source: String) throws(SwaylibError) {
+        let raw = LoadShaderFromMemory(vertexCode, fragmentCode)
+        let stagesSupplied = vertexCode != nil || fragmentCode != nil
+        // raylib hands back its default program when it ends up with no custom stage at all. That
+        // is fine when the caller asked for no stages, and a failure when it supplied one.
+        let isDefault = raw.id == rlGetShaderIdDefault()
+        guard IsShaderValid(raw), !(stagesSupplied && isDefault) else { throw .loadFailed(.shader, source: source) }
+        self.raw = raw
+        self.ownsProgram = !isDefault
+    }
+
+    /// The text of a shader file, or nil when no file was given.
+    private static func readSource(_ path: String?) throws(SwaylibError) -> String? {
+        guard let path else { return nil }
+        guard let text = LoadFileText(path) else { throw .loadFailed(.shader, source: path) }
+        defer { UnloadFileText(text) }
+        return String(cString: text)
     }
 
     deinit {
-        UnloadShader(raw)
+        if GraphicsContext.isCurrent(context) {
+            UnloadShader(raw)
+        } else if ownsProgram {
+            // The program went with its window's context; only the locations array is left.
+            MemFree(raw.locs)
+        }
     }
 
     /// The OpenGL program id.

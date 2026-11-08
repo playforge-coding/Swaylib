@@ -4,6 +4,10 @@ import CRaylibShims
 /// The application window and its OpenGL context. raylib has exactly one, so create one `Window`
 /// and keep it alive for as long as you draw; it closes when it goes out of scope.
 ///
+/// Closing the window deletes everything on the GPU with it. A ``Texture``, ``RenderTexture``,
+/// ``Font`` or ``Shader`` still alive then cannot be used any more, even in a later window; when it
+/// goes out of scope it only frees its memory.
+///
 /// Two environment variables make any program checkable without a person watching:
 /// `SWAYLIB_FRAMES=<n>` makes ``shouldClose`` turn true after `n` frames drawn with ``drawing(_:)``,
 /// and `SWAYLIB_SCREENSHOT=<file.png>` saves the last of those frames.
@@ -43,6 +47,7 @@ public struct Window: ~Copyable {
         Headless.configure(workingDirectory: String(cString: GetWorkingDirectory()))
         InitWindow(Int32(width), Int32(height), title)
         guard IsWindowReady() else { throw .windowFailed }
+        GraphicsContext.generation += 1
         swaylibPlatformWindowOpened()
         self.title = title
         // raylib keeps the frame target across CloseWindow and InitWindow; match the property.
@@ -279,8 +284,14 @@ public enum Random {
     }
 
     /// A random integer in the range, inclusive.
+    ///
+    /// - Precondition: Both bounds fit in `Int32`, which is what raylib's generator produces. For
+    ///   wider ranges use Swift's `Int.random(in:)`.
     public static func value(in range: ClosedRange<Int>) -> Int {
-        Int(GetRandomValue(Int32(range.lowerBound), Int32(range.upperBound)))
+        precondition(
+            range.lowerBound >= Int(Int32.min) && range.upperBound <= Int(Int32.max),
+            "Random.value(in:) needs bounds that fit in Int32")
+        return Int(GetRandomValue(Int32(range.lowerBound), Int32(range.upperBound)))
     }
 }
 

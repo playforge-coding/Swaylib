@@ -4,6 +4,7 @@ import CRaylib
 @MainActor
 public struct Texture: ~Copyable {
     var raw: CRaylib.Texture2D
+    let context = GraphicsContext.generation
 
     init(raw: CRaylib.Texture2D) {
         self.raw = raw
@@ -24,6 +25,7 @@ public struct Texture: ~Copyable {
     }
 
     deinit {
+        guard GraphicsContext.isCurrent(context) else { return }
         flushPendingDraws()
         UnloadTexture(raw)
     }
@@ -89,12 +91,14 @@ public struct Texture: ~Copyable {
         precondition(
             raw.format == PixelFormat.uncompressedR8G8B8A8.rawValue, "update(pixels:) needs an RGBA texture")
         precondition(pixels.count == width * height, "pixels must cover the whole texture")
+        // Draws of the old pixels that raylib has not submitted yet would otherwise show the new ones.
+        flushPendingDraws()
         pixels.withUnsafeBytes { UpdateTexture(raw, $0.baseAddress) }
     }
 
-    /// Reads the pixels back from the GPU.
+    /// Reads the pixels back from the GPU, including anything drawn into it this frame.
     public func image() -> Image {
-        Image(raw: LoadImageFromTexture(raw))
+        Image(raw: readPixels(raw))
     }
 
     /// Draws the texture with its top left at a position.
@@ -133,6 +137,34 @@ func flushPendingDraws() {
     }
 }
 
+/// Reads a texture's pixels after submitting the pending draws, so the image has them. On OpenGL ES
+/// raylib reads through a temporary framebuffer and then binds the screen's, so the render texture
+/// of an open ``textureMode(_:_:)`` is bound again afterwards.
+@MainActor
+func readPixels(_ texture: CRaylib.Texture2D) -> CRaylib.Image {
+    flushPendingDraws()
+    let image = LoadImageFromTexture(texture)
+    if let target = DrawingState.targets.last {
+        rlEnableFramebuffer(target.id)
+    }
+    return image
+}
+
+/// Which window's OpenGL context is current. Every ``Window`` creates a new context, and closing it
+/// deletes the GPU objects made in it. A resource that outlives its window must not unload them
+/// again: there is no context then, or a later window's context, where the same ids may name other
+/// objects. Not actor isolated because `deinit` is not; it only runs on the main actor, where the
+/// resources live.
+enum GraphicsContext {
+    /// Increased by every window that opens; 0 before the first.
+    nonisolated(unsafe) static var generation = 0
+
+    /// Whether a resource created under `generation` belongs to the open window's context.
+    static func isCurrent(_ generation: Int) -> Bool {
+        IsWindowReady() && generation == self.generation
+    }
+}
+
 /// A texture you can draw into with ``textureMode(_:_:)``, for off-screen rendering.
 ///
 /// OpenGL framebuffers are stored upside down. The `draw` methods here flip the texture so it
@@ -140,6 +172,7 @@ func flushPendingDraws() {
 @MainActor
 public struct RenderTexture: ~Copyable {
     var raw: CRaylib.RenderTexture2D
+    let context = GraphicsContext.generation
 
     /// Creates a framebuffer with a color texture and a depth buffer of the given size.
     public init(width: Int, height: Int) throws(SwaylibError) {
@@ -149,6 +182,7 @@ public struct RenderTexture: ~Copyable {
     }
 
     deinit {
+        guard GraphicsContext.isCurrent(context) else { return }
         flushPendingDraws()
         UnloadRenderTexture(raw)
     }
@@ -183,9 +217,10 @@ public struct RenderTexture: ~Copyable {
         SetTextureFilter(raw.texture, filter.rawValue)
     }
 
-    /// Reads the pixels back from the GPU, the right way up.
+    /// Reads the pixels back from the GPU, the right way up, including anything drawn into it this
+    /// frame. Inside ``textureMode(_:_:)`` drawing carries on into the same target afterwards.
     public func image() -> Image {
-        var image = Image(raw: LoadImageFromTexture(raw.texture))
+        var image = Image(raw: readPixels(raw.texture))
         image.flipVertically()
         return image
     }

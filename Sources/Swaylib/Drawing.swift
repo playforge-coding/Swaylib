@@ -14,10 +14,18 @@ public func drawing(_ body: () throws -> Void) rethrows {
 }
 
 /// Draws `body` through a 2D camera.
+///
+/// The modes below can nest in any combination. When an inner one ends, drawing goes on with
+/// whatever the enclosing calls set up, not raylib's defaults.
 @MainActor
 public func mode2D(_ camera: Camera2D, _ body: () throws -> Void) rethrows {
     BeginMode2D(camera.raw)
-    defer { EndMode2D() }
+    DrawingState.cameras.append(.twoD(camera.raw))
+    defer {
+        EndMode2D()
+        DrawingState.cameras.removeLast()
+        DrawingState.restoreCamera()
+    }
     try body()
 }
 
@@ -25,42 +33,82 @@ public func mode2D(_ camera: Camera2D, _ body: () throws -> Void) rethrows {
 @MainActor
 public func mode3D(_ camera: Camera3D, _ body: () throws -> Void) rethrows {
     BeginMode3D(camera.raw)
-    defer { EndMode3D() }
+    DrawingState.cameras.append(.threeD(camera.raw))
+    defer {
+        EndMode3D()
+        DrawingState.cameras.removeLast()
+        DrawingState.restoreCamera()
+    }
     try body()
 }
 
 /// Draws `body` into a render texture instead of the screen.
 ///
-/// Calls can nest: when an inner `textureMode` ends, drawing goes back to the outer render
-/// texture rather than the screen. raylib resets the camera when it switches targets, so a
-/// ``mode2D(_:_:)`` or ``mode3D(_:_:)`` around the inner call does not carry over to what the outer
-/// body draws after it; open the camera mode inside the outer `textureMode` again if you need it.
+/// The body starts without a camera, even inside ``mode2D(_:_:)`` or ``mode3D(_:_:)``, since those
+/// were set up for the outer target. When it ends, drawing goes back to the outer render texture
+/// (or the screen) and its camera.
 @MainActor
 public func textureMode(_ target: borrowing RenderTexture, _ body: () throws -> Void) rethrows {
     BeginTextureMode(target.raw)
-    TextureModeStack.targets.append(target.raw)
+    DrawingState.targets.append(target.raw)
+    DrawingState.cameras.append(nil)
     defer {
         EndTextureMode()
-        TextureModeStack.targets.removeLast()
-        if let outer = TextureModeStack.targets.last {
+        DrawingState.targets.removeLast()
+        DrawingState.cameras.removeLast()
+        if let outer = DrawingState.targets.last {
             BeginTextureMode(outer)
         }
+        DrawingState.restoreCamera()
     }
     try body()
 }
 
-/// The render textures of the ``textureMode(_:_:)`` calls currently open, innermost last. raylib
-/// itself only knows one target at a time.
+/// What the scoped modes that are currently open set up, innermost last. raylib only knows the
+/// current value of each and resets it to its default when a mode ends, so the enclosing value is
+/// set again from here.
 @MainActor
-enum TextureModeStack {
+enum DrawingState {
+    enum Camera {
+        case twoD(CRaylib.Camera2D)
+        case threeD(CRaylib.Camera3D)
+    }
+
     static var targets: [RenderTexture2D] = []
+    /// nil entries mark a ``textureMode(_:_:)``, which starts without a camera.
+    static var cameras: [Camera?] = []
+    static var shaders: [CRaylib.Shader] = []
+    static var blendModes: [BlendMode] = []
+    static var scissorAreas: [Rectangle] = []
+
+    /// Sets up the camera of the innermost open camera mode again, after an inner mode reset it.
+    static func restoreCamera() {
+        switch cameras.last {
+        case .twoD(let camera):
+            BeginMode2D(camera)
+        case .threeD(let camera):
+            // BeginMode3D pushes the projection matrix and EndMode3D pops it, so pop the outer
+            // mode's push before pushing again; its own EndMode3D pops this one.
+            EndMode3D()
+            BeginMode3D(camera)
+        case nil, .some(nil):
+            break
+        }
+    }
 }
 
 /// Draws `body` with a custom shader.
 @MainActor
 public func shaderMode(_ shader: borrowing Shader, _ body: () throws -> Void) rethrows {
     BeginShaderMode(shader.raw)
-    defer { EndShaderMode() }
+    DrawingState.shaders.append(shader.raw)
+    defer {
+        EndShaderMode()
+        DrawingState.shaders.removeLast()
+        if let outer = DrawingState.shaders.last {
+            BeginShaderMode(outer)
+        }
+    }
     try body()
 }
 
@@ -68,16 +116,37 @@ public func shaderMode(_ shader: borrowing Shader, _ body: () throws -> Void) re
 @MainActor
 public func blendMode(_ mode: BlendMode, _ body: () throws -> Void) rethrows {
     BeginBlendMode(mode.rawValue)
-    defer { EndBlendMode() }
+    DrawingState.blendModes.append(mode)
+    defer {
+        EndBlendMode()
+        DrawingState.blendModes.removeLast()
+        if let outer = DrawingState.blendModes.last {
+            BeginBlendMode(outer.rawValue)
+        }
+    }
     try body()
 }
 
-/// Clips everything drawn in `body` to a rectangle in screen pixels.
+/// Clips everything drawn in `body` to a rectangle in screen pixels. A nested call replaces the
+/// outer rectangle until it ends rather than intersecting with it.
 @MainActor
 public func scissorMode(_ area: Rectangle, _ body: () throws -> Void) rethrows {
-    BeginScissorMode(Int32(area.x), Int32(area.y), Int32(area.width), Int32(area.height))
-    defer { EndScissorMode() }
+    DrawingState.beginScissor(area)
+    DrawingState.scissorAreas.append(area)
+    defer {
+        EndScissorMode()
+        DrawingState.scissorAreas.removeLast()
+        if let outer = DrawingState.scissorAreas.last {
+            DrawingState.beginScissor(outer)
+        }
+    }
     try body()
+}
+
+extension DrawingState {
+    static func beginScissor(_ area: Rectangle) {
+        BeginScissorMode(Int32(area.x), Int32(area.y), Int32(area.width), Int32(area.height))
+    }
 }
 
 /// Immediate drawing of shapes, text and 3D primitives. Call these inside ``drawing(_:)``.

@@ -29,4 +29,7 @@ public enum SwaylibError: Error, Equatable, Sendable {
     case exportFailed(path: String)
     /// The audio device could not be opened.
     case audioDeviceFailed
+    /// An ``AudioDevice`` is already open. raylib has a single audio device, so a second one would
+    /// share it and the first one's `deinit` would close it under the second.
+    case audioDeviceAlreadyOpen
 }

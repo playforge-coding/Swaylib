@@ -161,6 +161,176 @@ struct WindowTests {
         // Asking for no stages at all is raylib's default shader, and fine.
         let defaultShader = try Shader(vertexCode: nil, fragmentCode: nil)
         _ = defaultShader
+        // One readable stage does not make up for an unreadable one, and the error names that file.
+        let fragment = try writeRedFragmentShader()
+        #expect(throws: SwaylibError.loadFailed(.shader, source: "/nonexistent.vs")) {
+            _ = try Shader(vertexPath: "/nonexistent.vs", fragmentPath: fragment)
+        }
+    }
+
+    /// A fragment shader that paints everything red, in the backend's language.
+    private func writeRedFragmentShader() throws -> String {
+        let header =
+            switch Shader.language {
+            case .glsl330: "#version 330\n"
+            case .glslES300: "#version 300 es\nprecision mediump float;\n"
+            }
+        let source = header + "out vec4 finalColor;\nvoid main() { finalColor = vec4(1.0, 0.0, 0.0, 1.0); }\n"
+        let path = Self.scratch.appending(path: "red.fs").path()
+        try source.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    @Test("Nested modes give the enclosing shader, camera and clipping back")
+    func nestedModes() throws {
+        let window = try openWindow()
+        _ = window
+        let red = try Shader(vertexPath: nil, fragmentPath: writeRedFragmentShader())
+        let plain = try Shader(vertexCode: nil, fragmentCode: nil)
+        let target = try RenderTexture(width: 32, height: 32)
+        textureMode(target) {
+            Draw.clearBackground(.black)
+            shaderMode(red) {
+                shaderMode(plain) {}
+                // Back on the red shader: this green square comes out red.
+                Draw.rectangle(Rectangle(x: 0, y: 0, width: 8, height: 8), color: .green)
+            }
+            mode2D(Camera2D(offset: Vector2(16, 0))) {
+                mode2D(Camera2D()) {}
+                // Still shifted by the outer camera.
+                Draw.rectangle(Rectangle(x: 0, y: 16, width: 8, height: 8), color: .blue)
+            }
+            scissorMode(Rectangle(x: 0, y: 24, width: 16, height: 8)) {
+                scissorMode(Rectangle(x: 16, y: 24, width: 16, height: 8)) {}
+                // Clipped to the outer rectangle again.
+                Draw.rectangle(Rectangle(x: 0, y: 24, width: 32, height: 8), color: .lime)
+            }
+        }
+        let image = target.image()
+        let pixels = [
+            image.color(atX: 4, y: 4), image.color(atX: 20, y: 20), image.color(atX: 4, y: 20),
+            image.color(atX: 4, y: 28), image.color(atX: 28, y: 28),
+        ]
+        let shaderRed = Color(red: 255, green: 0, blue: 0, alpha: 255)
+        #expect(pixels == [shaderRed, .blue, .black, .lime, .black])
+    }
+
+    @Test("Reading a render texture inside its own texture mode")
+    func readBackInTextureMode() throws {
+        let window = try openWindow()
+        _ = window
+        let target = try RenderTexture(width: 16, height: 16)
+        var midway = Color.black
+        textureMode(target) {
+            Draw.clearBackground(.black)
+            Draw.rectangle(Rectangle(x: 0, y: 0, width: 8, height: 16), color: .green)
+            // Has the green half, though it is still in raylib's batch.
+            midway = target.image().color(atX: 4, y: 4)
+            // Still goes into the render texture, not the screen.
+            Draw.rectangle(Rectangle(x: 8, y: 0, width: 8, height: 16), color: .blue)
+        }
+        let image = target.image()
+        let pixels = [midway, image.color(atX: 4, y: 4), image.color(atX: 12, y: 4)]
+        #expect(pixels == [.green, .green, .blue])
+    }
+
+    @Test("Updating a texture leaves earlier draws of it alone")
+    func textureUpdateMidFrame() throws {
+        let window = try openWindow()
+        _ = window
+        let texture = try Texture(image: Image(width: 8, height: 8, color: .red))
+        let target = try RenderTexture(width: 16, height: 8)
+        textureMode(target) {
+            Draw.clearBackground(.black)
+            texture.draw(at: .zero)
+            texture.update(pixels: Array(repeating: .blue, count: 64))
+            texture.draw(at: Vector2(8, 0))
+        }
+        let image = target.image()
+        let pixels = [image.color(atX: 4, y: 4), image.color(atX: 12, y: 4)]
+        #expect(pixels == [.red, .blue])
+    }
+
+    /// Opens a window, loads a texture and closes the window again.
+    private func textureFromClosedWindow() throws -> Texture {
+        let window = try openWindow()
+        _ = window
+        return try Texture(image: Image(width: 4, height: 4, color: .red))
+    }
+
+    @Test("A texture outliving its window leaves the next window's textures alone")
+    func textureOutlivesWindow() throws {
+        let stale = try textureFromClosedWindow()
+        let window = try openWindow()
+        _ = window
+        // Likely the same id as the stale one, in the new context.
+        let texture = try Texture(image: Image(width: 4, height: 4, color: .lime))
+        _ = consume stale
+        let target = try RenderTexture(width: 4, height: 4)
+        textureMode(target) {
+            Draw.clearBackground(.black)
+            texture.draw(at: .zero)
+        }
+        let pixel = target.image().color(atX: 2, y: 2)
+        #expect(pixel == .lime)
+    }
+
+    @Test("A font file that cannot be read is a load failure, not the default font")
+    func missingFontFile() throws {
+        let window = try openWindow()
+        _ = window
+        #expect(throws: SwaylibError.loadFailed(.font, source: "/nonexistent.png")) {
+            _ = try Font(path: "/nonexistent.png")
+        }
+        // The default font is still there for text.
+        let measured = Font.default.measure("Hello", fontSize: 20)
+        #expect(measured.x > 20)
+    }
+
+    @Test("One audio device at a time, kept open for loaded sounds")
+    func audioDevice() throws {
+        let wav = Self.scratch.appending(path: "silence.wav").path()
+        try Self.silentWAV().write(to: URL(filePath: wav))
+        let sound: Sound
+        do {
+            let device = try AudioDevice()
+            #expect(throws: SwaylibError.audioDeviceAlreadyOpen) {
+                _ = try AudioDevice()
+            }
+            sound = try Sound(path: wav)
+            _ = consume device
+        } catch SwaylibError.audioDeviceFailed {
+            return  // No audio output on this machine.
+        }
+        // The sound kept the device open; a new owner takes it over.
+        let device = try AudioDevice()
+        sound.play()
+        sound.stop()
+        _ = consume sound
+        _ = device
+    }
+
+    /// A tenth of a second of 16-bit mono silence.
+    private static func silentWAV() -> Data {
+        let samples = 2205
+        var data = Data()
+        func append<T: FixedWidthInteger>(_ value: T) {
+            withUnsafeBytes(of: value.littleEndian) { data.append(contentsOf: $0) }
+        }
+        data.append(contentsOf: Array("RIFF".utf8))
+        append(UInt32(36 + samples * 2))
+        data.append(contentsOf: Array("WAVEfmt ".utf8))
+        append(UInt32(16))
+        append(UInt16(1))
+        append(UInt16(1))
+        append(UInt32(22050))
+        append(UInt32(44100))
+        append(UInt16(2))
+        append(UInt16(16))
+        data.append(contentsOf: Array("data".utf8))
+        append(UInt32(samples * 2))
+        data.append(Data(count: samples * 2))
+        return data
     }
 
     @Test("Text draws something")

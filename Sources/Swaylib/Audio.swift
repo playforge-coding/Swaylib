@@ -1,16 +1,39 @@
 import CRaylib
 
 /// The audio output. Open one before loading sounds and keep it alive while they play.
+///
+/// raylib has one audio device, so only one `AudioDevice` can be open at a time. If it goes out of
+/// scope while a ``Sound`` or ``Music`` is still loaded, the device stays open until the last of
+/// them unloads, since raylib cannot unload audio after the device is closed.
 @MainActor
 public struct AudioDevice: ~Copyable {
+    /// Only assigned once the device is open. A struct without stored properties counts as
+    /// initialized from the start, so its `deinit` would also run when `init` throws, and close a
+    /// device another `AudioDevice` owns.
+    private let isOpen: Bool
+
     /// Opens the default audio device.
+    ///
+    /// - Throws: ``SwaylibError/audioDeviceAlreadyOpen`` if another `AudioDevice` is open, or
+    ///   ``SwaylibError/audioDeviceFailed`` if the device could not be opened.
     public init() throws(SwaylibError) {
-        InitAudioDevice()
-        guard IsAudioDeviceReady() else { throw .audioDeviceFailed }
+        if AudioLifetime.closePending {
+            // The previous owner is gone and only loaded audio kept the device open: take it over.
+            AudioLifetime.closePending = false
+        } else {
+            guard !IsAudioDeviceReady() else { throw .audioDeviceAlreadyOpen }
+            InitAudioDevice()
+            guard IsAudioDeviceReady() else { throw .audioDeviceFailed }
+        }
+        isOpen = true
     }
 
     deinit {
-        CloseAudioDevice()
+        if AudioLifetime.loadedResources > 0 {
+            AudioLifetime.closePending = true
+        } else {
+            CloseAudioDevice()
+        }
     }
 
     /// The overall volume, 0 to 1.
@@ -30,10 +53,12 @@ public struct Sound: ~Copyable {
         let raw = LoadSound(path)
         guard IsSoundValid(raw) else { throw .loadFailed(.sound, source: path) }
         self.raw = raw
+        AudioLifetime.loaded()
     }
 
     deinit {
         UnloadSound(raw)
+        AudioLifetime.unloaded()
     }
 
     /// Starts playing from the beginning.
@@ -88,10 +113,12 @@ public struct Music: ~Copyable {
         let raw = LoadMusicStream(path)
         guard IsMusicValid(raw) else { throw .loadFailed(.music, source: path) }
         self.raw = raw
+        AudioLifetime.loaded()
     }
 
     deinit {
         UnloadMusicStream(raw)
+        AudioLifetime.unloaded()
     }
 
     /// Whether playback starts over at the end.
@@ -161,5 +188,26 @@ public struct Music: ~Copyable {
     /// Sets the stereo pan, -1 (left) to 1 (right).
     public func setPan(_ pan: Float) {
         SetMusicPan(raw, pan)
+    }
+}
+
+/// Keeps raylib's audio device open while sounds and music are loaded: unloading them takes a lock
+/// that `CloseAudioDevice` destroys. The state is not actor isolated because `deinit` is not; like
+/// the unload calls next to it, it only runs on the main actor, where the resources live.
+enum AudioLifetime {
+    nonisolated(unsafe) static var loadedResources = 0
+    /// The ``AudioDevice`` was released while resources were still loaded.
+    nonisolated(unsafe) static var closePending = false
+
+    static func loaded() {
+        loadedResources += 1
+    }
+
+    static func unloaded() {
+        loadedResources -= 1
+        if loadedResources == 0 && closePending {
+            closePending = false
+            CloseAudioDevice()
+        }
     }
 }
