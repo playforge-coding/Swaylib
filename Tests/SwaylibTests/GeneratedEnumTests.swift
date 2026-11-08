@@ -1,4 +1,5 @@
 import CRaylib
+import Foundation
 import Swaylib
 import Testing
 
@@ -31,10 +32,61 @@ struct GeneratedEnumTests {
         #expect(Swaylib.Gesture.tap.rawValue == GESTURE_TAP.rawValue)
     }
 
-    @Test("Every raylib value has a case")
-    func caseCounts() {
-        #expect(Swaylib.KeyboardKey.allCases.count == 110)
-        #expect(Swaylib.GamepadButton.allCases.count == 18)
-        #expect(Swaylib.PixelFormat.allCases.count == 24)
+    /// Raw values of every generated enum, keyed by its raylib name.
+    static let generated: [String: [Int32]] = [
+        "TraceLogLevel": rawValues(of: Swaylib.TraceLogLevel.self),
+        "KeyboardKey": rawValues(of: Swaylib.KeyboardKey.self),
+        "MouseButton": rawValues(of: Swaylib.MouseButton.self),
+        "MouseCursor": rawValues(of: Swaylib.MouseCursor.self),
+        "GamepadButton": rawValues(of: Swaylib.GamepadButton.self),
+        "GamepadAxis": rawValues(of: Swaylib.GamepadAxis.self),
+        "MaterialMapIndex": rawValues(of: Swaylib.MaterialMapIndex.self),
+        "ShaderLocationIndex": rawValues(of: Swaylib.ShaderLocationIndex.self),
+        "ShaderUniformDataType": rawValues(of: Swaylib.ShaderUniformDataType.self),
+        "ShaderAttributeDataType": rawValues(of: Swaylib.ShaderAttributeDataType.self),
+        "PixelFormat": rawValues(of: Swaylib.PixelFormat.self),
+        "TextureFilter": rawValues(of: Swaylib.TextureFilter.self),
+        "TextureWrap": rawValues(of: Swaylib.TextureWrap.self),
+        "CubemapLayout": rawValues(of: Swaylib.CubemapLayout.self),
+        "FontType": rawValues(of: Swaylib.FontType.self),
+        "BlendMode": rawValues(of: Swaylib.BlendMode.self),
+        "CameraMode": rawValues(of: Swaylib.CameraMode.self),
+        "CameraProjection": rawValues(of: Swaylib.CameraProjection.self),
+        "NPatchLayout": rawValues(of: Swaylib.NPatchLayout.self),
+    ]
+
+    /// raylib's flag sets, generated as option sets rather than enums.
+    static let optionSets: Set<String> = ["ConfigFlags", "Gesture"]
+
+    static func rawValues<E: CaseIterable & RawRepresentable>(of type: E.Type) -> [Int32] where E.RawValue == Int32 {
+        type.allCases.map(\.rawValue).sorted()
     }
+
+    @Test("Every raylib enum and value has a generated counterpart")
+    func casesMatchRaylib() throws {
+        // Read raylib's own parser output from the submodule, independently of the generator.
+        let apiFile = URL(filePath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Sources/CRaylib/raylib/tools/rlparser/output/raylib_api.json")
+        let api = try JSONDecoder().decode(RaylibAPI.self, from: Data(contentsOf: apiFile))
+
+        for raylibEnum in api.enums where !Self.optionSets.contains(raylibEnum.name) {
+            let expected = raylibEnum.values.map(\.value).sorted()
+            #expect(Self.generated[raylibEnum.name] == expected, "\(raylibEnum.name) differs from raylib")
+        }
+        let raylibNames = Set(api.enums.map(\.name))
+        #expect(Set(Self.generated.keys).union(Self.optionSets) == raylibNames)
+    }
+}
+
+/// The part of `raylib_api.json` this test reads.
+private struct RaylibAPI: Decodable {
+    struct Enum: Decodable {
+        struct Value: Decodable {
+            let value: Int32
+        }
+        let name: String
+        let values: [Value]
+    }
+    let enums: [Enum]
 }
