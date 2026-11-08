@@ -4,6 +4,8 @@ Idiomatic Swift bindings for raylib, on Linux, Windows and macOS.
 
 ## Overview
 
+![The Swaylib logo: a pixel art orange square with a Swift bird above the word swaylib.](swaylib-logo)
+
 Swaylib wraps [raylib](https://www.raylib.com), the C library for simple games and graphics
 programs, in Swift that reads like Swift. raylib itself is compiled into your program by Swift
 Package Manager, so raylib does not need to be installed. Linux needs the X11 and OpenGL

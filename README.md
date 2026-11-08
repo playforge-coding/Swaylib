@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Sources/Swaylib/Swaylib.docc/Resources/swaylib-logo@2x.png" width="144" height="144" alt="Swaylib logo">
+</p>
+
 # Swaylib
 
 Idiomatic Swift bindings for [raylib](https://www.raylib.com), for Linux, Windows and macOS.
