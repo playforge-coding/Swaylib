@@ -21,7 +21,7 @@ and Metal. With the `ANGLE` trait, raylib is built for OpenGL ES 3 and GLFW crea
 through EGL instead of the platform's native OpenGL API:
 
 ```swift
-.package(url: "https://github.com/playforge-coding/Swaylib.git", branch: "main", traits: ["ANGLE"]),
+.package(url: "https://github.com/swift-gamedev/Swaylib.git", branch: "main", traits: ["ANGLE"]),
 ```
 
 Two libraries are involved. GLFW loads `libEGL` at run time to create the context. raylib's

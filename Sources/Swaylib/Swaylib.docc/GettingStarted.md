@@ -13,7 +13,7 @@ import PackageDescription
 let package = Package(
     name: "MyGame",
     dependencies: [
-        .package(url: "https://github.com/playforge-coding/Swaylib.git", branch: "main"),
+        .package(url: "https://github.com/swift-gamedev/Swaylib.git", branch: "main"),
     ],
     targets: [
         .executableTarget(name: "MyGame", dependencies: ["Swaylib"]),

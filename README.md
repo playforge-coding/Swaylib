@@ -30,7 +30,7 @@ the main actor. The names follow raylib's, so its cheatsheet still applies.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/playforge-coding/Swaylib.git", branch: "main"),
+    .package(url: "https://github.com/swift-gamedev/Swaylib.git", branch: "main"),
 ],
 ```
 
