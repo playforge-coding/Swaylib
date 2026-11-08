@@ -24,7 +24,9 @@ let package = Package(
         // compiled directly.
         .target(
             name: "CRaylib",
-            exclude: ["raylib"],
+            // miniaudio is a second submodule, a newer release than raylib bundles; raudio.c
+            // includes it on Linux and macOS (see the comment there).
+            exclude: ["raylib", "miniaudio"],
             sources: [
                 "rcore.c", "rshapes.c", "rtextures.c", "rtext.c", "rmodels.c", "raudio.c",
                 "rglfw.c",

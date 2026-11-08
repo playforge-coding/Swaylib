@@ -17,8 +17,8 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# The raylib submodule, kept byte for byte as released.
-[Sources/CRaylib/raylib/**]
+# The raylib and miniaudio submodules, kept byte for byte as released.
+[Sources/CRaylib/{raylib,miniaudio}/**]
 charset = unset
 end_of_line = unset
 insert_final_newline = unset
