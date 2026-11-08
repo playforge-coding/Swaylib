@@ -85,6 +85,13 @@ let package = Package(
             name: "SwaylibTests",
             dependencies: ["Swaylib"]
         ),
+        // Writes Sources/Swaylib/Generated and the API coverage page from the submodule's
+        // raylib_api.json.
+        .executableTarget(
+            name: "swaylib-generate",
+            path: "Tools/Generate",
+            exclude: ["wrapped.txt"]
+        ),
     ],
     cLanguageStandard: .gnu11
 )
