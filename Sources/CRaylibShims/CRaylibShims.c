@@ -8,6 +8,15 @@
 
 #include <CRaylib.h>
 
+#if defined(__APPLE__)
+// Declarations only; the implementation is compiled into rcore by raylib's RGFW platform.
+#include "../CRaylib/raylib/src/external/RGFW/RGFW.h"
+#endif
+
+#if defined(SWAYLIB_ANGLE_X11)
+#include <dlfcn.h>
+#endif
+
 // Atomic because raylib can log from its audio thread while the main thread swaps handlers.
 static _Atomic(SwaylibLogHandler) currentHandler = NULL;
 
@@ -48,4 +57,50 @@ void swaylibSetLogHandler(SwaylibLogHandler handler)
 {
     atomic_store(&currentHandler, handler);
     SetTraceLogCallback(handler != NULL ? forwardLog : NULL);
+}
+
+void swaylibLog(int logLevel, const char *message)
+{
+    TraceLog(logLevel, "%s", message);
+}
+
+// RGFW_window_close calls RGFW_deinit once the last window closes, and RGFW's macOS deinit
+// releases NSApp. The RGFW_noDeinitOnClose flag skips that; RGFW stays initialized for the life
+// of the process and later windows open normally. RGFW never clears its root window pointer on
+// close, so that is done here, which also makes the next window the root again.
+void swaylibPlatformWindowOpened(void)
+{
+#if defined(__APPLE__)
+    RGFW_window *window = RGFW_getRootWindow();
+    if (window != NULL) RGFW_window_setFlags(window, RGFW_window_getFlags(window) | RGFW_noDeinitOnClose);
+#endif
+}
+
+void swaylibPlatformWindowClosed(void)
+{
+#if defined(__APPLE__)
+    RGFW_setRootWindow(NULL);
+#endif
+}
+
+// GLFW has already loaded ANGLE's libEGL (see _GLFW_EGL_LIBRARY in Package.swift), so this only
+// looks it up. The context stays current: EGL defers the teardown until GLFW releases it while
+// destroying the window, which is still before it closes the X display, and raylib's GL cleanup in
+// CloseWindow keeps a working context until then.
+void swaylibPlatformWindowClosing(void)
+{
+#if defined(SWAYLIB_ANGLE_X11)
+    void *egl = dlopen("libEGL.so", RTLD_NOW | RTLD_NOLOAD);
+    if (egl == NULL) return;
+    typedef void *(*GetCurrentDisplay)(void);
+    typedef unsigned int (*Terminate)(void *display);
+    GetCurrentDisplay getCurrentDisplay = (GetCurrentDisplay)dlsym(egl, "eglGetCurrentDisplay");
+    Terminate terminate = (Terminate)dlsym(egl, "eglTerminate");
+    if (getCurrentDisplay != NULL && terminate != NULL)
+    {
+        void *display = getCurrentDisplay();
+        if (display != NULL) terminate(display);
+    }
+    dlclose(egl);
+#endif
 }

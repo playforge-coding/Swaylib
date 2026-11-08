@@ -15,6 +15,22 @@ typedef void (*SwaylibLogHandler)(int logLevel, const char *message);
 // delivered, the same as raylib's default logging does.
 void swaylibSetLogHandler(SwaylibLogHandler handler);
 
+// Writes one line to raylib's trace log. TraceLog itself is variadic, which Swift cannot call.
+void swaylibLog(int logLevel, const char *message);
+
+// Call right after InitWindow succeeds and right after CloseWindow. On macOS they keep raylib's
+// RGFW platform from tearing itself down when the last window closes, because that teardown
+// releases NSApp, a singleton nobody owns, and the next autorelease pool drain then crashes.
+// No-ops elsewhere.
+void swaylibPlatformWindowOpened(void);
+void swaylibPlatformWindowClosed(void);
+
+// Call right before CloseWindow. With the ANGLE trait on Linux it terminates the EGL display while
+// the X11 connection is still open: GLFW closes the X display first and terminates EGL after, and
+// ANGLE's GLX renderer then crashes tearing down against the closed display. GLFW's own
+// eglTerminate afterwards is a no-op. No-op in every other configuration.
+void swaylibPlatformWindowClosing(void);
+
 #ifdef __cplusplus
 }
 #endif

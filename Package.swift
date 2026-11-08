@@ -75,7 +75,11 @@ let package = Package(
         // C helpers for the few raylib entry points Swift cannot call directly (va_list callbacks).
         .target(
             name: "CRaylibShims",
-            dependencies: ["CRaylib"]
+            dependencies: ["CRaylib"],
+            cSettings: [
+                // The ANGLE window teardown workaround in CRaylibShims.c (GLFW on X11 only).
+                .define("SWAYLIB_ANGLE_X11", .when(platforms: [.linux], traits: ["ANGLE"]))
+            ]
         ),
         .target(
             name: "Swaylib",
@@ -85,6 +89,11 @@ let package = Package(
             name: "SwaylibTests",
             dependencies: ["Swaylib"]
         ),
+        // Ports of raylib's examples. Each runs unattended with SWAYLIB_FRAMES and SWAYLIB_SCREENSHOT.
+        .executableTarget(name: "BasicWindow", dependencies: ["Swaylib"], path: "Examples/BasicWindow"),
+        .executableTarget(name: "BouncingBall", dependencies: ["Swaylib"], path: "Examples/BouncingBall"),
+        .executableTarget(name: "RenderTextures", dependencies: ["Swaylib"], path: "Examples/RenderTextures"),
+        .executableTarget(name: "Camera3D", dependencies: ["Swaylib"], path: "Examples/Camera3D"),
         // Writes Sources/Swaylib/Generated and the API coverage page from the submodule's
         // raylib_api.json.
         .executableTarget(

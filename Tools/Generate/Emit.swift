@@ -54,6 +54,41 @@ private func emitOptionSet(_ enumeration: API.Enum) -> String {
     return out
 }
 
+/// raylib's named colors (`LIGHTGRAY`, `RAYWHITE`, ...) as static members of `Color`.
+func emitColors(_ api: API) throws -> String {
+    var out = generatedHeader
+    out += "\nextension Color {\n"
+    var first = true
+    for define in api.defines where define.type == "COLOR" {
+        guard case .string(let literal) = define.value else {
+            throw GenerateError("\(define.name): expected a color literal")
+        }
+        let channels = literal.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
+        guard channels.count == 4 else {
+            throw GenerateError("\(define.name): expected four channels in \(literal)")
+        }
+        if !first {
+            out += "\n"
+        }
+        first = false
+        out += docComment(define.description, indent: "    ")
+        out += "    public static let \(colorName(define.name)) = Color("
+        out += "red: \(channels[0]), green: \(channels[1]), blue: \(channels[2]), alpha: \(channels[3]))\n"
+    }
+    out += "}\n"
+    return out
+}
+
+/// `DARKGRAY` becomes `darkGray`; names without a known prefix are just lowercased.
+private func colorName(_ cName: String) -> String {
+    let lower = cName.lowercased()
+    for prefix in ["light", "dark", "sky", "ray"] where lower.hasPrefix(prefix) && lower.count > prefix.count {
+        let rest = lower.dropFirst(prefix.count)
+        return prefix + rest.prefix(1).uppercased() + rest.dropFirst()
+    }
+    return lower
+}
+
 /// Parses wrapped.txt into a map from C function name to Swift symbol.
 ///
 /// One line per wrapped raylib function: the C name, whitespace, then the Swift symbol.
@@ -117,7 +152,7 @@ func emitCoverage(_ api: API, wrapped: [String: String], version: String) throws
         out += "## \(section.module) (\(count) of \(section.functions.count))\n\n"
         out += "| raylib | Swaylib |\n| --- | --- |\n"
         for function in section.functions {
-            let swift = wrapped[function.name].map { "``\($0)``" } ?? "not yet"
+            let swift = wrapped[function.name].map { "`\($0)`" } ?? "not yet"
             out += "| `\(function.name)` | \(swift) |\n"
         }
         out += "\n"

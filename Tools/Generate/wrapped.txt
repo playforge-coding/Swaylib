@@ -1,5 +1,291 @@
 # raylib functions that Swaylib wraps, one per line: the C name, then the Swift symbol that
-# replaces it, written as a DocC symbol link (Type/member(label:)). swaylib-generate turns
-# this into the API Coverage page and fails if a C name does not exist in raylib_api.json.
+# replaces it. swaylib-generate turns this into the API Coverage page and fails if a C name does
+# not exist in raylib_api.json.
 #
 # Keep this in step with Sources/Swaylib: add a line when you wrap a function.
+
+# rcore: window
+InitWindow Window.init(width:height:title:flags:)
+CloseWindow Window (deinit)
+WindowShouldClose Window.shouldClose
+IsWindowReady Window.init(width:height:title:flags:) (checked)
+IsWindowFullscreen Window.isFullscreen
+IsWindowHidden Window.isHidden
+IsWindowMinimized Window.isMinimized
+IsWindowMaximized Window.isMaximized
+IsWindowFocused Window.isFocused
+IsWindowResized Window.wasResized
+IsWindowState Window.hasState(_:)
+SetWindowState Window.setState(_:)
+ClearWindowState Window.clearState(_:)
+ToggleFullscreen Window.toggleFullscreen()
+ToggleBorderlessWindowed Window.toggleBorderlessWindowed()
+MaximizeWindow Window.maximize()
+MinimizeWindow Window.minimize()
+RestoreWindow Window.restore()
+SetWindowIcon Window.setIcon(_:)
+SetWindowTitle Window.title
+SetWindowPosition Window.position
+SetWindowMonitor Window.setMonitor(_:)
+SetWindowMinSize Window.setMinimumSize(width:height:)
+SetWindowMaxSize Window.setMaximumSize(width:height:)
+SetWindowSize Window.resize(width:height:)
+SetWindowOpacity Window.setOpacity(_:)
+SetWindowFocused Window.focus()
+GetScreenWidth Window.width
+GetScreenHeight Window.height
+GetRenderWidth Window.renderSize
+GetRenderHeight Window.renderSize
+GetMonitorCount Window.monitorCount
+GetCurrentMonitor Window.currentMonitor
+GetMonitorWidth Window.monitorSize(_:)
+GetMonitorHeight Window.monitorSize(_:)
+GetMonitorRefreshRate Window.monitorRefreshRate(_:)
+GetWindowPosition Window.position
+GetWindowScaleDPI Window.scaleDPI
+GetMonitorName Window.monitorName(_:)
+SetClipboardText Window.clipboard
+GetClipboardText Window.clipboard
+TakeScreenshot Window.takeScreenshot(to:)
+SetConfigFlags Window.init(width:height:title:flags:)
+
+# rcore: cursor
+ShowCursor Mouse.showCursor()
+HideCursor Mouse.hideCursor()
+IsCursorHidden Mouse.isCursorHidden
+EnableCursor Mouse.enableCursor()
+DisableCursor Mouse.disableCursor()
+IsCursorOnScreen Mouse.isCursorOnScreen
+
+# rcore: drawing
+ClearBackground Draw.clearBackground(_:)
+BeginDrawing drawing(_:)
+EndDrawing drawing(_:)
+BeginMode2D mode2D(_:_:)
+EndMode2D mode2D(_:_:)
+BeginMode3D mode3D(_:_:)
+EndMode3D mode3D(_:_:)
+BeginTextureMode textureMode(_:_:)
+EndTextureMode textureMode(_:_:)
+BeginShaderMode shaderMode(_:_:)
+EndShaderMode shaderMode(_:_:)
+BeginBlendMode blendMode(_:_:)
+EndBlendMode blendMode(_:_:)
+BeginScissorMode scissorMode(_:_:)
+EndScissorMode scissorMode(_:_:)
+
+# rcore: shaders
+LoadShader Shader.init(vertexPath:fragmentPath:)
+LoadShaderFromMemory Shader.init(vertexCode:fragmentCode:)
+IsShaderValid Shader.init(vertexPath:fragmentPath:) (checked)
+GetShaderLocation Shader.location(ofUniform:)
+GetShaderLocationAttrib Shader.location(ofAttribute:)
+SetShaderValue Shader.setFloat(_:at:), setInt(_:at:), setVector(_:at:)
+SetShaderValueV Shader.setFloats(_:at:)
+SetShaderValueMatrix Shader.setMatrix(_:at:)
+SetShaderValueTexture Shader.setTexture(_:at:)
+UnloadShader Shader (deinit)
+
+# rcore: cameras and timing
+GetWorldToScreen Camera3D.worldToScreen(_:)
+GetWorldToScreen2D Camera2D.worldToScreen(_:)
+GetScreenToWorld2D Camera2D.screenToWorld(_:)
+GetCameraMatrix Camera3D.matrix
+GetCameraMatrix2D Camera2D.matrix
+UpdateCamera Camera3D.update(mode:)
+SetTargetFPS Window.targetFPS
+GetFrameTime Time.frame
+GetTime Time.elapsed
+GetFPS Time.fps
+WaitTime Time.wait(seconds:)
+SetRandomSeed Random.seed(_:)
+GetRandomValue Random.value(in:)
+TraceLog Log.log(_:_:)
+SetTraceLogLevel Log.setLevel(_:)
+SetTraceLogCallback Log.setHandler(_:)
+
+# rcore: input
+IsKeyPressed Keyboard.isPressed(_:)
+IsKeyPressedRepeat Keyboard.isPressedRepeat(_:)
+IsKeyDown Keyboard.isDown(_:)
+IsKeyReleased Keyboard.isReleased(_:)
+IsKeyUp Keyboard.isUp(_:)
+GetKeyPressed Keyboard.nextPressedKey()
+GetCharPressed Keyboard.nextTypedCharacter()
+SetExitKey Keyboard.exitKey
+IsGamepadAvailable Gamepad.isAvailable
+GetGamepadName Gamepad.name
+IsGamepadButtonPressed Gamepad.isPressed(_:)
+IsGamepadButtonDown Gamepad.isDown(_:)
+IsGamepadButtonReleased Gamepad.isReleased(_:)
+GetGamepadAxisCount Gamepad.axisCount
+GetGamepadAxisMovement Gamepad.axis(_:)
+SetGamepadVibration Gamepad.vibrate(leftMotor:rightMotor:duration:)
+IsMouseButtonPressed Mouse.isPressed(_:)
+IsMouseButtonDown Mouse.isDown(_:)
+IsMouseButtonReleased Mouse.isReleased(_:)
+IsMouseButtonUp Mouse.isUp(_:)
+GetMouseX Mouse.position
+GetMouseY Mouse.position
+GetMousePosition Mouse.position
+GetMouseDelta Mouse.delta
+SetMousePosition Mouse.position
+SetMouseOffset Mouse.setOffset(_:)
+SetMouseScale Mouse.setScale(_:)
+GetMouseWheelMove Mouse.wheelMove
+GetMouseWheelMoveV Mouse.wheelMoveV
+SetMouseCursor Mouse.cursor
+GetTouchPosition Touch.position(_:)
+GetTouchPointCount Touch.count
+SetGesturesEnabled Gestures.setEnabled(_:)
+IsGestureDetected Gestures.isDetected(_:)
+GetGestureDetected Gestures.detected
+
+# rshapes
+DrawPixelV Draw.pixel(at:color:)
+DrawLineV Draw.line(from:to:color:)
+DrawLineEx Draw.line(from:to:thickness:color:)
+DrawLineStrip Draw.lineStrip(_:color:)
+DrawCircleV Draw.circle(center:radius:color:)
+DrawCircleLinesV Draw.circleLines(center:radius:color:)
+DrawCircleGradient Draw.circleGradient(center:radius:inner:outer:)
+DrawCircleSector Draw.circleSector(center:radius:startAngle:endAngle:segments:color:)
+DrawRing Draw.ring(center:innerRadius:outerRadius:startAngle:endAngle:segments:color:)
+DrawEllipseV Draw.ellipse(center:radiusH:radiusV:color:)
+DrawRectangleRec Draw.rectangle(_:color:)
+DrawRectanglePro Draw.rectangle(_:origin:rotation:color:)
+DrawRectangleLinesEx Draw.rectangleLines(_:thickness:color:)
+DrawRectangleGradientEx Draw.rectangleGradient(_:topLeft:bottomLeft:bottomRight:topRight:)
+DrawRectangleRounded Draw.rectangleRounded(_:roundness:segments:color:)
+DrawRectangleRoundedLinesEx Draw.rectangleRoundedLines(_:roundness:segments:thickness:color:)
+DrawTriangle Draw.triangle(_:_:_:color:)
+DrawTriangleLines Draw.triangleLines(_:_:_:color:)
+DrawPoly Draw.polygon(center:sides:radius:rotation:color:)
+DrawPolyLinesEx Draw.polygonLines(center:sides:radius:rotation:thickness:color:)
+CheckCollisionRecs Rectangle.intersects(_:)
+CheckCollisionCircleRec Rectangle.intersects(circleAt:radius:)
+CheckCollisionPointRec Rectangle.contains(_:)
+GetCollisionRec Rectangle.intersection(with:)
+
+# rtextures: images
+LoadImage Image.init(path:)
+LoadImageFromMemory Image.init(fileType:data:)
+LoadImageFromTexture Texture.image()
+IsImageValid Image.init(path:) (checked)
+UnloadImage Image (deinit)
+ExportImage Image.export(to:)
+GenImageColor Image.init(width:height:color:)
+GenImageGradientLinear Image.init(width:height:gradientFrom:to:direction:)
+GenImageChecked Image.init(width:height:checksX:checksY:_:_:)
+ImageCopy Image.copy()
+ImageFromImage Image.cropped(to:)
+ImageText Image.init(text:fontSize:color:)
+ImageFormat Image.convert(to:)
+ImageCrop Image.crop(to:)
+ImageAlphaMask Image.applyAlphaMask(_:)
+ImageResize Image.resize(width:height:)
+ImageResizeNN Image.resizeNearestNeighbor(width:height:)
+ImageFlipVertical Image.flipVertically()
+ImageFlipHorizontal Image.flipHorizontally()
+ImageRotate Image.rotate(degrees:)
+ImageColorTint Image.tint(_:)
+ImageColorInvert Image.invert()
+ImageColorGrayscale Image.grayscale()
+LoadImageColors Image.colors
+UnloadImageColors Image.colors
+GetImageColor Image.color(atX:y:)
+ImageClearBackground Image.clear(_:)
+ImageDrawPixelV Image.drawPixel(at:color:)
+ImageDrawLineEx Image.drawLine(from:to:thickness:color:)
+ImageDrawCircleV Image.drawCircle(center:radius:color:)
+ImageDrawRectangleRec Image.drawRectangle(_:color:)
+ImageDrawRectangleLinesEx Image.drawRectangleLines(_:thickness:color:)
+ImageDrawImagePro Image.draw(_:from:to:origin:rotation:tint:)
+ImageDrawText Image.drawText(_:x:y:fontSize:color:)
+
+# rtextures: textures
+LoadTexture Texture.init(path:)
+LoadTextureFromImage Texture.init(image:)
+LoadRenderTexture RenderTexture.init(width:height:)
+IsTextureValid Texture.init(path:) (checked)
+UnloadTexture Texture (deinit)
+IsRenderTextureValid RenderTexture.init(width:height:) (checked)
+UnloadRenderTexture RenderTexture (deinit)
+UpdateTexture Texture.update(pixels:)
+GenTextureMipmaps Texture.generateMipmaps()
+SetTextureFilter Texture.setFilter(_:)
+SetTextureWrap Texture.setWrap(_:)
+DrawTextureV Texture.draw(at:tint:)
+DrawTextureEx Texture.draw(at:rotation:scale:tint:)
+DrawTextureRec Texture.draw(region:at:tint:)
+DrawTexturePro Texture.draw(region:to:origin:rotation:tint:)
+
+# rtextures: colors
+ColorNormalize Color.normalized
+ColorFromNormalized Color.init(normalized:)
+ColorToHSV Color.hsv
+ColorFromHSV Color.init(hue:saturation:value:)
+ColorTint Color.tinted(_:)
+ColorBrightness Color.brightness(_:)
+ColorContrast Color.contrast(_:)
+ColorAlpha Color.withAlpha(_:)
+ColorAlphaBlend Color.blended(with:tint:)
+ColorLerp Color.lerp(to:amount:)
+GetColor Color.init(hex:)
+ColorToInt Color.hex
+
+# rtext
+GetFontDefault Font.default
+LoadFont Font.init(path:)
+LoadFontEx Font.init(path:size:codepoints:)
+IsFontValid Font.init(path:) (checked)
+UnloadFont Font (deinit)
+DrawFPS Draw.fps(x:y:)
+DrawText Draw.text(_:x:y:fontSize:color:)
+DrawTextEx Draw.text(_:font:at:fontSize:spacing:color:)
+DrawTextPro Draw.text(_:font:at:origin:rotation:fontSize:spacing:color:)
+MeasureTextEx Font.measure(_:fontSize:spacing:)
+
+# rmodels
+DrawLine3D Draw.line3D(from:to:color:)
+DrawCubeV Draw.cube(at:size:color:)
+DrawCubeWiresV Draw.cubeWires(at:size:color:)
+DrawSphere Draw.sphere(at:radius:color:)
+DrawSphereWires Draw.sphereWires(at:radius:rings:slices:color:)
+DrawCylinder Draw.cylinder(at:radiusTop:radiusBottom:height:slices:color:)
+DrawCapsule Draw.capsule(from:to:radius:slices:rings:color:)
+DrawPlane Draw.plane(at:size:color:)
+DrawGrid Draw.grid(slices:spacing:)
+
+# raudio
+InitAudioDevice AudioDevice.init()
+CloseAudioDevice AudioDevice (deinit)
+IsAudioDeviceReady AudioDevice.init() (checked)
+SetMasterVolume AudioDevice.masterVolume
+GetMasterVolume AudioDevice.masterVolume
+LoadSound Sound.init(path:)
+IsSoundValid Sound.init(path:) (checked)
+UnloadSound Sound (deinit)
+PlaySound Sound.play()
+StopSound Sound.stop()
+PauseSound Sound.pause()
+ResumeSound Sound.resume()
+IsSoundPlaying Sound.isPlaying
+SetSoundVolume Sound.setVolume(_:)
+SetSoundPitch Sound.setPitch(_:)
+SetSoundPan Sound.setPan(_:)
+LoadMusicStream Music.init(path:)
+IsMusicValid Music.init(path:) (checked)
+UnloadMusicStream Music (deinit)
+PlayMusicStream Music.play()
+IsMusicStreamPlaying Music.isPlaying
+UpdateMusicStream Music.update()
+StopMusicStream Music.stop()
+PauseMusicStream Music.pause()
+ResumeMusicStream Music.resume()
+SeekMusicStream Music.seek(to:)
+SetMusicVolume Music.setVolume(_:)
+SetMusicPitch Music.setPitch(_:)
+SetMusicPan Music.setPan(_:)
+GetMusicTimeLength Music.length
+GetMusicTimePlayed Music.timePlayed

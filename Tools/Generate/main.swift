@@ -16,6 +16,7 @@ let wrappedFile = toolDirectory.appending(path: "wrapped.txt")
 
 let outputs: [(path: String, content: () throws -> String)] = [
     ("Sources/Swaylib/Generated/Enums.swift", { emitEnums(api) }),
+    ("Sources/Swaylib/Generated/Colors.swift", { try emitColors(api) }),
     ("Sources/Swaylib/Swaylib.docc/APICoverage.md", { try emitCoverage(api, wrapped: wrapped, version: version) }),
 ]
 
