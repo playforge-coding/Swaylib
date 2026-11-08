@@ -6,7 +6,8 @@ Idiomatic Swift bindings for raylib, on Linux, Windows and macOS.
 
 Swaylib wraps [raylib](https://www.raylib.com), the C library for simple games and graphics
 programs, in Swift that reads like Swift. raylib itself is compiled into your program by Swift
-Package Manager, so there is nothing to install.
+Package Manager, so raylib does not need to be installed. Linux needs the X11 and OpenGL
+development headers to build; <doc:Platforms> lists what each system needs.
 
 ```swift
 import Swaylib
@@ -95,6 +96,7 @@ touches the window, input or the GPU runs on the main actor.
 ### Shaders
 
 - ``Shader``
+- ``ShaderLanguage``
 - ``ShaderLocationIndex``
 - ``ShaderUniformDataType``
 - ``ShaderAttributeDataType``
@@ -118,6 +120,7 @@ touches the window, input or the GPU runs on the main actor.
 ### Errors, logging and randomness
 
 - ``SwaylibError``
+- ``SwaylibError/Resource``
 - ``Log``
 - ``TraceLogLevel``
 - ``Random``

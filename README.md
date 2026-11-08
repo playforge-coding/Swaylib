@@ -2,8 +2,9 @@
 
 Idiomatic Swift bindings for [raylib](https://www.raylib.com), for Linux, Windows and macOS.
 
-raylib is compiled into your program by Swift Package Manager, GLFW included, so there is nothing to
-install beyond a Swift toolchain (and on Linux the X11 and OpenGL headers). Rendering uses the
+raylib is compiled into your program by Swift Package Manager, GLFW included, so raylib itself
+needs no install. You need a Swift toolchain, plus the X11 and OpenGL headers on Linux, or the
+MSVC build tools and Windows SDK on Windows. Rendering uses the
 system's OpenGL by default, or OpenGL ES through [ANGLE](https://chromium.googlesource.com/angle/angle)
 with the `ANGLE` package trait.
 
@@ -34,11 +35,15 @@ dependencies: [
 ],
 ```
 
-Needs Swift 6.2 or newer. On Debian or Ubuntu, first:
+Needs Swift 6.2 or newer, and on macOS `platforms: [.macOS(.v15)]` in your package. On Debian or
+Ubuntu, first:
 
 ```
 sudo apt install libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev
 ```
+
+On Windows, install the Visual Studio components that the
+[Swift installation instructions](https://www.swift.org/install/windows/) list.
 
 ## Try the examples
 

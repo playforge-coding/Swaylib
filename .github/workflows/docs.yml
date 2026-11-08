@@ -22,11 +22,13 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    container: swift:6.4-noble
+    # Keep in step with .swift-version, like the Linux job in ci.yml.
+    container: swift:6.4.2-noble
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: true
+          persist-credentials: false
       - name: Install X11 and OpenGL headers
         run: |
           apt-get update

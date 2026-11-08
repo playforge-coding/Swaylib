@@ -25,7 +25,10 @@ Tested: Ubuntu 24.04 with Swift 6.4, on Mesa with Intel graphics and under Xvfb 
 
 ## Windows
 
-Needs the Swift toolchain for Windows, which brings the MSVC build tools it depends on. raylib
+Needs the Swift toolchain for Windows and, separately, the MSVC build tools and a Windows SDK from
+Visual Studio, which the Swift toolchain uses but does not install. The
+[Swift installation instructions for Windows](https://www.swift.org/install/windows/) list the
+exact Visual Studio components and a `winget` command that installs them along with Swift. raylib
 links `opengl32`, `gdi32`, `winmm`, `user32` and `shell32`, all part of Windows.
 
 CI builds Swaylib on Windows and runs the tests that do not need a window. The window tests are
