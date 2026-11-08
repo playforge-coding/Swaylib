@@ -39,6 +39,12 @@ let package = Package(
                 .define("PLATFORM_DESKTOP_RGFW", .when(platforms: [.macOS])),
                 // Without any GRAPHICS_API_OPENGL_* define rlgl picks desktop OpenGL 3.3.
                 .define("GRAPHICS_API_OPENGL_ES3", .when(traits: ["ANGLE"])),
+                // GLFW on Linux loads libEGL.so.1 and libGLESv2.so.2, the system's (Mesa's) names,
+                // while ANGLE ships libEGL.so and libGLESv2.so. Without these the program would
+                // create a Mesa EGL context and call ANGLE's GL functions on it.
+                .define("_GLFW_EGL_LIBRARY", to: "\"libEGL.so\"", .when(platforms: [.linux], traits: ["ANGLE"])),
+                .define(
+                    "_GLFW_GLESV2_LIBRARY", to: "\"libGLESv2.so\"", .when(platforms: [.linux], traits: ["ANGLE"])),
                 .define("_GLFW_X11", .when(platforms: [.linux])),
             ],
             linkerSettings: [
