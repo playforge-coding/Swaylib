@@ -17,7 +17,7 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# Vendored raylib, kept byte for byte as released.
+# The raylib submodule, kept byte for byte as released.
 [Sources/CRaylib/raylib/**]
 charset = unset
 end_of_line = unset
