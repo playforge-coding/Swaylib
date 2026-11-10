@@ -79,6 +79,10 @@ Platform-specific linker and define settings live in `Package.swift` with `.when
 - CI builds and tests on Linux, Windows and macOS. A change that only builds on the platform you happen to be on is not done. When a CI job fails on a platform you cannot run, read the log and fix it; do not disable the job.
 - When adding raylib API: write the wrapper with a doc comment, add a line per C function to `Tools/Generate/wrapped.txt`, regenerate, cover it with a test or an example, and list any new public type under a topic in `Swaylib.docc/Swaylib.md`.
 
+## Git worktrees
+
+Prefer doing work in a git worktree over switching branches in the main checkout, so the main checkout stays on `main` and parallel tasks don't step on each other. Claude Code's worktrees go under `.claude/worktrees/`, which is ignored. A new worktree does not check out submodules, so run `git submodule update --init` in it before building. Each worktree has its own `.build/`, so its first build compiles raylib from scratch. Remove the worktree (`git worktree remove`) once its branch is merged or abandoned.
+
 ## Searching the Codebase
 
 Use fast, modern tools instead of the slow defaults:
