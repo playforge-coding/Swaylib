@@ -6,3 +6,4 @@
 *.log
 .playwright-cli/
 .playwright-mcp/
+.claude/worktrees/
