@@ -68,8 +68,8 @@ screenshot and exit.
 ## Documentation
 
 Read it at [swift-gamedev.github.io/Swaylib](https://swift-gamedev.github.io/Swaylib/), published
-from `main` on every push. The DocC catalog in `Sources/Swaylib/Swaylib.docc/` has a getting
-started guide, the backend and platform notes, the architecture, a roadmap, and a generated page
+from `main` whenever a push changes the sources or the package. The DocC catalog in
+`Sources/Swaylib/Swaylib.docc/` has a getting started guide, the backend and platform notes, the architecture, a roadmap, and a generated page
 listing which of raylib's functions are wrapped (260 of 619 so far). Build it locally with
 `swift package generate-documentation --target Swaylib`.
 

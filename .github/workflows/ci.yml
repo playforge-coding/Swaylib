@@ -1,9 +1,27 @@
 name: CI
 
+# Only changes that can affect the build, the tests, the lint or the docs start a run. A commit that
+# only touches the README, the agent notes, editor settings and the like does not. Sources/** also
+# covers the raylib and miniaudio submodule pointers. docs.yml is listed because it has no pull
+# request trigger of its own, so this is the only check a change to it gets before it deploys.
 on:
   push:
     branches: [main]
+    paths: &relevant-paths
+      - "Sources/**"
+      - "Tests/**"
+      - "Examples/**"
+      - "Tools/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - ".swift-version"
+      - ".swift-format"
+      - ".gitmodules"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/docs.yml"
   pull_request:
+    paths: *relevant-paths
+  workflow_dispatch:
 
 # Nothing here writes to the repository.
 permissions:

@@ -1,11 +1,19 @@
 name: Docs
 
 # Publishes the DocC catalog to GitHub Pages at https://swift-gamedev.github.io/Swaylib/ on every
-# push to main. Pull requests only check that the docs build, in the Linux job of ci.yml.
+# push to main that can change the docs: the Swift sources and their catalog, the package manifest
+# and the toolchain. Pull requests only check that the docs build, in the Linux job of ci.yml.
 
 on:
   push:
     branches: [main]
+    paths:
+      - "Sources/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - ".swift-version"
+      - ".gitmodules"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 # Nothing by default; each job asks for what it needs, and only deploy can write to Pages.

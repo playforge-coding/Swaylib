@@ -87,11 +87,21 @@ CI runs that command, so a broken symbol link fails the build. To browse them lo
 swift package --disable-sandbox preview-documentation --target Swaylib
 ```
 
-Every push to `main` publishes the docs to
-[swift-gamedev.github.io/Swaylib](https://swift-gamedev.github.io/Swaylib/) through the Docs
-workflow (`.github/workflows/docs.yml`). It builds them for static hosting under the `/Swaylib/`
-base path and replaces the site's root page with a redirect to the landing page. It can also be
-run by hand from the Actions tab.
+Every push to `main` that touches `Sources/`, `Package.swift`, `Package.resolved`,
+`.swift-version`, `.gitmodules` or the workflow itself publishes the docs to [swift-gamedev.github.io/Swaylib](https://swift-gamedev.github.io/Swaylib/) through the
+Docs workflow (`.github/workflows/docs.yml`). It builds them for static hosting under the
+`/Swaylib/` base path and replaces the site's root page with a redirect to the landing page. It can
+also be run by hand from the Actions tab.
+
+## Continuous integration
+
+The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and on pull requests, but only
+when they change something that can affect the result: `Sources/` (including the submodule
+pointers), `Tests/`, `Examples/`, `Tools/`, `Package.swift`, `Package.resolved`, `.swift-version`,
+`.swift-format`, `.gitmodules`, or either workflow file. A change that only touches the README,
+`AGENTS.md` or editor settings starts no run. Both workflows can be started by hand from the
+Actions tab. If you add a top-level file or folder that the build reads, add it to the `paths` list
+in `ci.yml`, and to the one in `docs.yml` too if the documentation build reads it.
 
 ## Adding raylib API
 
