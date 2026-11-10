@@ -44,6 +44,27 @@ Where Swaylib is and where it is going. Finished items stay in their section, ch
 - [ ] Drop the miniaudio submodule once a raylib release bundles miniaudio 0.11.26 or newer, which
   opens PulseAudio devices whose native format is s24_32.
 
+## Web
+
+Swift's Wasm SDK in the browser, without Emscripten. There is no plan for a WebGPU backend: raylib's
+OpenGL ES 3 path on WebGL 2 keeps GLSL ES 300 shaders working.
+
+- [x] `rcore`, `rshapes`, `rtextures`, `rtext` and `rmodels` compile unmodified with the Swift SDK for
+  Wasm (checked by hand, with OpenGL ES 3 headers borrowed from the system).
+- [ ] `raudio` compiles. miniaudio's thread priority code calls four POSIX functions that WASI lacks.
+- [ ] A WASI configuration in `Package.swift`: OpenGL ES 3 defines, no GLFW, and GL headers for WASI.
+- [ ] The `Swaylib` target builds for WASI, starting with `WASILibc` in `Platform.swift`.
+- [ ] A raylib platform for the browser: canvas, input, timing and buffer swaps. raylib's own web
+  platforms need Emscripten, so this lives in a Swaylib wrapper.
+- [ ] `gl*` imports backed by WebGL 2.
+- [ ] Packaging with JavaScriptKit and its PackageToJS plugin, which also supplies the browser WASI
+  shim.
+- [ ] `while !Window.shouldClose` loops running in the browser, either in a Web Worker with
+  `SharedArrayBuffer` and `Atomics.wait` or through JSPI.
+- [ ] Audio through a custom miniaudio backend on Web Audio, because miniaudio's own only builds under
+  Emscripten.
+- [ ] The examples running in a browser, on CI.
+
 ## API coverage
 
 - [ ] Models, meshes, materials and animations (`rmodels`).
